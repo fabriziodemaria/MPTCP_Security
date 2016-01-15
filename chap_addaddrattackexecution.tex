@@ -1,19 +1,169 @@
 \chapter{ADD\_ADDR Attack Simulation}
 \label{chap:addaddrattackexecution}
 
-Since the first part of the thesis work has been devoted to build the attacking tool to reproduce the exploitation of the ADD\_ADDR vulnerability, an entire chapter is dedicated to this topic. This work can be a valuable reference for future simulation setups, involving MPTCP or any other networking protocol.
-
 \section{Environment Setup}
-Here it will be explained what UML virtual machines are and why they were good candidates for the simulation tests. The setup procedure is also reported here, with graphs to visually show the simulation's network scenario. The Scapy tool is also presented here. This was a great program to manipulate and forge packets.
+In order to achieve a reliable reproduction of a real world scenario, the simulation involves the setup of two User Mode Linux (UML) virtual machines running a Linux kernel with enabled support for MPTCP. These two machines act as client and server, carrying on an MPTCP connection that is the target for the ADD\_ADDR attack. 
+Using UML to proceed with the experiments allows for very fast setup and boot-up time, with good emulation of real machines and giving the possibility to work on a single hosting machine with no risk of damaging or crashing its underlying kernel.
+
+A good resource in terms of tools, configuration files and kernel images is the official mptcp website:
+\textit{http://www.multipath-tcp.org}. In particular, the website offers a python script that downloads all the necessary files to run the two virtual machines. Considering our purpose of verifying the ADD\_ADDR attack feasibility, there is no need to modify or debug the Linux kernel source code, and the above mentioned components can be used out of the box. At this stage of the analysis it is actually advised to perform the attack on the official distribution as is, and develop external tools for injecting packets and monitoring the status of the connections. More specifically, the MPTCP version adopted for the tests is: \textit{Stable release v0.89.0-rc}.
+
+When executing the script \textit{setup.py} retrieved from the official Website, a few files are downloaded. A \textit{vmlinux} executable file with the MPTCP compatible Linux kernel, two file-systems for the client and the server (\textit{fs\_client} and \textit{fs\_server}) and two shell scripts to configure and run the virtual machines (\textit{client.sh} and \textit{server.sh}). No manual configuration is needed, and client and server should be able to connect via MPTCP right away.
+Here it follows the content of the \textit{client.sh} (a similar shell script that is not reported here can be found for the server counterpart, including a single \textit{tap2} interface setup in that case):
+
+
+\begin{lstlisting}[language=bash, caption=\textit{client.sh}]
+#!/bin/bash
+
+USER=`whoami`
+
+sudo tunctl -u $USER -t tap0
+sudo tunctl -u $USER -t tap1
+
+sudo ifconfig tap0 10.1.1.1 netmask 255.255.255.0 up
+sudo ifconfig tap1 10.1.2.1 netmask 255.255.255.0 up
+
+sudo sysctl net.ipv4.ip_forward=1
+sudo iptables -t nat -A POSTROUTING -s 10.0.0.0/8 ! -d 10.0.0.0/8 -j MASQUERADE
+
+sudo chmod 666 /dev/net/tun
+
+./vmlinux ubda=fs_client mem=256M umid=umlA eth0=tuntap,tap0 eth1=tuntap,tap1
+
+sudo tunctl -d tap0
+sudo tunctl -d tap1
+
+sudo iptables -t nat -D POSTROUTING -s 10.0.0.0/8 ! -d 10.0.0.0/8 -j MASQUERADE
+\end{lstlisting}
+
+These scripts call the \textit{tunctl} command to create the tap interfaces and later assign an IP address to them by using \textit{ifconfig}. A \textit{tap} (namely network tap or tap interface) simulates a link layer device and it can be used to create a network bridge [wiki]. How taps are used in our simulation will become clear when observing the final network scenario.
+In order for the new tap interfaces to recognize each other and being able to send packets to each other it is necessary to enable the \textit{ip forwarding} option using the corresponding \textit{sysctl} command. It is also necessary to configure the \textit{iptables} upon startup... The virtual machine is launched by executing the \textit{vmlinux} file with some options to define various properties as well as attaching the newly created tap interfaces that will be used locally to sniff and inject packets (acting, in this specific case, as a physical man in the middle).
+
+The resulting network scenario is graphically depicted in Figure \ref{fig:networkscenario}.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=\textwidth]{images/Network_Scenario}
+\caption{Network scenario}
+\label{fig:networkscenario}
+\end{figure}
+
+\vspace{5mm} %5mm vertical space
+In order to carry out the ADD\_ADDR attack it is necessary to inject forged packets into the existing MPTCP flow. In order to do this it is possible to use Scapy, a powerful interactive packet manipulation program that is able to forge or decode packets of a wide number of protocols, send them on the wire, capture them, match requests and replies, and much more [\textit{http://www.secdev.org/projects/scapy}]. Moreover, there exists an unofficial version of Scapy that supports MPTCP and it can be found at the following repository: \textit{https://github.com/nimai/mptcp-scapy}. The Python script that can be used to carry out the ADD\_ADDR attack can be found here: \textit{https://github.com/fabriziodemaria/MPTCP-Exploit}. 
+
+It is appropriate to mention here some of the limitations of the tool (that are examined more in details in Section \ref{limitationsandfuturework}: \textit{Limitations and future work}): the tool has been designed to hijack a specific kind of communication involving client and server sending each others text messages using the tool \textit{netcat}. It is very unlikely that the procedure completes with other kind of MPTCP connection setups between client and server. Nevertheless, this specific exploit serves well our purpose of assessing the danger and feasibility of the ADD\_ADDR attack in general terms.
+Moreover, this tool simplify the attack procedure by sniffing the SEQ and ACK numbers of the ongoing connection instead of starting a procedure to try and guess the values. Also, the ports in use by the client and the server are retrieved automatically by inspecting the sniffed packets, while the IP addresses have to be provided by the user when launching the attack script. Further considerations about these simplifications can be found in Section \ref{limitationsandfuturework}.
+
+The python module \textit{test\_add\_address.py} in the root of the GitHub repository follows the analysis in RFC7430[] to perform the various steps necessary to hijack the MPTCP connection. All the requirements and theoretical details about this procedure have been reported in Section \ref{theaddaddrattack}, and this section is limited to show and investigate the actual code implementation.
+
+By establishing a testing connection via the \textit{iperf} tool, two subflows are automatically generated by MPTCP, from the two interfaces of the client (ip addresses: \textit{10.1.1.2} and \textit{10.1.2.2}) and the single server's interface (with ip address: \textit{10.2.1.2}).
+
+\vspace{5mm} %5mm vertical space
+In order to carry out the ADD\_ADDR attack it is necessary to inject forged packets into the existing MPTCP flow. In order to do this it is possible to use Scapy, a powerful interactive packet manipulation program that is able to forge or decode packets of a wide number of protocols, send them on the wire, capture them, match requests and replies, and much more [\textit{http://www.secdev.org/projects/scapy}]. Moreover, there exists an unofficial version of Scapy that supports MPTCP and it can be found at the following repository: \textit{https://github.com/nimai/mptcp-scapy}. The Python script that can be used to carry out the ADD\_ADDR attack can be found here: \textit{https://github.com/fabriziodemaria/MPTCP-Exploit}. 
+
+It is appropriate to mention here some of the limitations of the tool (that are examined more in details in Section \ref{limitationsandfuturework}: \textit{Limitations and future work}): the tool has been designed to hijack a specific kind of communication involving client and server sending each others text messages using the tool \textit{netcat}. It is very unlikely that the procedure completes with other kind of MPTCP connection setups between client and server. Nevertheless, this specific exploit serves well our purpose of assessing the danger and feasibility of the ADD\_ADDR attack in general terms.
+Moreover, this tool simplify the attack procedure by sniffing the SEQ and ACK numbers of the ongoing connection instead of starting a procedure to try and guess the values. Also, the ports in use by the client and the server are retrieved automatically by inspecting the sniffed packets, while the IP addresses have to be provided by the user when launching the attack script. Further considerations about these simplifications can be found in Section \ref{limitationsandfuturework}.
+
+The python module \textit{test\_add\_address.py} in the root of the GitHub repository follows the analysis in RFC7430[] to perform the various steps necessary to hijack the MPTCP connection. All the requirements and theoretical details about this procedure have been reported in Section \ref{theaddaddrattack}, and this section is limited to show and investigate the actual code implementation.
 
 \section{Attack Script}
-This part is supposed to explain how the Scapy attacking script actually replicates all the steps needed to execute the ADD\_ADDR attack. The steps were explained from a theoretical point of view in the previous chapter. Some code snippets of the attacking script can be present in this section.
-Some details on the problems encountered in building the script and how they have been solved can be valuable material, too.
+The very first step to be executed is the following: all the RST outgoing packets that can be generated by the hosting machine (the attacker) must be blocked during the process, when the first phases are completing and no finalized TCP connection can be actually detected by the system. This is done with the commands in Listing \ref{norst}.
+
+
+\begin{lstlisting}[language=python, caption=\textit{Disable RST outgoing packets}, label=norst]
+execCommand("sudo iptables -I OUTPUT -p tcp --tcp-flags ALL RST,ACK -j DROP", shell = True)
+execCommand("sudo iptables -I OUTPUT -p tcp --tcp-flags ALL RST -j DROP", shell = True)
+\end{lstlisting}
+
+The Scapy built-in \textit{sniff} function allows to retrieve packets from a specific interface, according to a custom filter function \textit{filter\_source} that inspects the source address. In this way it is possible to retrieve the IP addresses, ports, SEQ and ACK numbers of the ongoing connection between client and server.
+The first constructive step of the whole procedure consists in forging of the ADD\_ADDR packet using the method \textit{forge\_addaddr} (Listing \ref{forgeaddaddrfunction}).
+
+\begin{lstlisting}[language=python, caption=\textit{forge\_addaddr method}, label=forgeaddaddrfunction] 
+def forge_addaddr(myIP, srcIP, srcPort, dstIP, dstPort, sniffedSeq, sniffedAck):
+    pkt = (IP(version=4L, src=srcIP, dst=dstIP)/ TCP(sport=srcPort, dport=dstPort, flags="A", seq=sniffedSeq, ack=sniffedAck, options=[TCPOption_MP(mptcp=MPTCP_AddAddr(address_id=ADDRESS_ID, adv_addr=myIP))]))
+    return pkt
+\end{lstlisting}
+
+Here comes the first consideration about the script design: once the ADD\_ADDR is sent to the victim client, the tool has to be already listening for the MP\_JOIN sent back as a response; in order to make sure this happens, multithreading is used to start looking for the MP\_JOIN packet even before ADD\_ADDR is sent, with the thread named \textit{SYNThread}. \textit{SYNThread} just calls the method \textit{get\_MPTCP\_syn} in the module \textit{sniff\_script.py}, that uses \textit{tcpdump} with a specific filter option. In fact the Scapy \textit{sniff} functionality proves to be unreliable in case of a high flow of packets to be processed and often skips some when the buffers reach their limits. Even if this is fine in other parts of the script where any packet capture is fine to retrieve ACK and SEQ numbers, it is mandatory not to miss the single MP\_JOIN+SYN packet sent by the client upon ADD\_ADDR reception. This problem concerning the sniffing function of Scapy is also reported in the official website under the section "Known bugs": \textit{May miss packets under heavy load}.
+Note that this wouldn't be a problem with the slow message exchange of \textit{netcat}, but the script can be also tested with high throughput applications like \textit{iperf}, hence the usage of the more reliable \textit{tcpdump}.
+
+In order to filter out exactly the MP\_JOIN packet we are looking for, the following command in Listing \ref{tcpdump} is used, where \textit{tf} is just a temporary file to store the information and \textit{i} is the interface name passed as a parameter.
+
+\begin{lstlisting}[language=python, caption=\textit{tcpdump for MP\_JOIN}, label=tcpdump]
+execCommand("sudo tcpdump -c 1 -w " + tf.name + ".cap -i " + i + " \"tcp[tcpflags] & tcp-syn != 0\" 2>/dev/null", shell = True)
+\end{lstlisting}
+
+A similar sniffing procedure is used for the next steps regarding SYN/ACK and ACK MP\_JOIN packets, as it can be seen for the threads named \textit{SYNACKThread} and \textit{ACKThread}. Each time these sniffing threads are started, a sleep function is called for a time expressed in \textit{THREAD\_SYNC\_TIME}, as a poor but effective mechanism that ensures that \textit{tcpdump} is called and running in the new threads before proceeding.
+
+The MP\_JOIN packets generated and received in this way are manipulated to change the IP addresses and ports (and possibly other fields) as described in the attack procedure and then forwarded to the right host. Note that manipulating packet's fields in Scapy is different with respect to the case of ADD\_ADDR where the packet is forged from scratch. All the functions \textit{forge\_ack}, \textit{forge\_synack} and \textit{forge\_syn} actually don't forge a new packet but slightly modify a copy of the received packet. While doing this it is necessary to eliminate the \textit{checksum} value so that Scapy automatically recalculate the correct value for it, taking into consideration the updated values. Similar considerations hold for the Ethernet layer of the manipulated packets. 
+
+Once the ACK has been sent to the server, the new subflow is set up. In order to make it more visible, the next steps in the script enable again the outgoing RST packets and forge some of them to close all the subflows apart from the malicious one. By following the \textit{print} messages in the script, this corresponds to \textit{Phase 5}. Now, all the messages from the server to the client are sent to the attacker instead, without an explicit way for the victim to notice. 
+
+The very last portion of the script runs the method \textit{handle\_payload} that both prints the text messages (payload) received from the server and generate \textit{data\_ack} packets for the server in order to keep the connection alive. 
+
+The final tool and a step-by-step guide on how to use it can be found in the repository: \textit{https://github.com/fabriziodemaria/MPTCP-Exploit}.
 
 \section{Reproducing the Attack}
-This section is a step-by-step tutorial on how to call the attack script and reproduce the attack. It mainly contains the README file in the GitHub repository where the script can be retrieved.
-Screenshots and/or Whireshark output can be added to show the actual behaviour of the attack over a netcat connection.
+\begin{enumerate}  
+\item
+    Open two terminal windows and run the client.sh and server.sh scripts to launch the UML virtual machines (user/password: root)
+\item
+    On the server machine, run the following (you can use a TCP Port of your choice here):
+        \begin{verbatim}
+        netcat -l -p 33443
+        \end{verbatim}
+\item
+    On the client machine, we first need to disable one of the two network interfaces, namely eth1. This is necessary due to some limitations currently affecting the Scapy tool and the attacking script (the connection will still be MPTCP, with a single subflow):
+\begin{verbatim}
+        ifdown eth1
+        \end{verbatim}
+\item
+    Now you can run netcat on the client, too:
+\begin{verbatim}
+        netcat 10.2.1.2 33443
+        \end{verbatim}
+\item
+    Try to exchange messages between client and server to verify that communication is active.
+\item
+    Now we can start the attack opening a new terminal on our local machine (it is necessary to start the Scapy script AFTER having established the netcat connection).
+\item
+    Go to the folder were you downloaded the Scapy tool and type the following:
+\begin{verbatim}
+        sudo python test\_add\_address.py 10.1.1.1 \
+        10.2.1.2 10.1.1.2 tap2 tap0
+        \end{verbatim}
 
-\section{Conclusions} 
-A final evaluation of the experiment is needed. First, it is important to emphasize the limitations of the adopted tool and how this simulation differs with respect to real scenarios. Nevertheless, it is crucial to explain the value of such experiment, that indeed proves the feasibility of the ADD\_ADDR attack and better justify the development of a fix, which is the main topic of the next chapter.
+    NOTE: If an import error appears, try to install the missing dependencies with:
+\begin{verbatim}
+        sudo apt-get install python-netaddr
+        \end{verbatim}
+\item
+    Go back to the client UML terminal and start sending messages to the server. You should notice that while the messages exchange goes on, the attacking script progresses. 
+    
+    IMPORTANT: it might be that the script gets stuck (it shouldn't take more than a few seconds to complete). If that is the case, close netcat and start again from step 2.
+\item
+    If you reach 100\% in the attack process, just try to send a message from the server to the client and you will notice that the messages are now sent to the attacking machine instead. Further improvements would allow to also answer back to the server, thus impersonating the client.
+\end{enumerate} 
 
+
+\section{Conclusions} \label{limitationsandfuturework}
+The Scapy tool developed for this research targets a specific scenario to exploit the ADD\_ADDR vulnerability. It is not intended to be general enough to break all the existing MPTCP implementations. Nevertheless, by succeeding in this specific case involving a \textit{netcat} communication between two hosts, it is indeed proved the feasibility and gravity of the problem, and it should be relatively easy to extend the portability of the attacking tool to act in new scenarios. 
+
+This section mainly investigates the workarounds used to simplify the attacking process, to prove that they are not critical enough to devalue the results of the tool itself.
+
+\vspace{5mm} %5mm vertical space
+All the requirements for the succeeding of the attack have been already listed in Section \ref{theaddaddrattack}. Here is reported a short summary:
+
+\begin{itemize}  
+\item the four-tuple: IP and port for both source and destination;
+\item valid ACK/SEQ numbers for the targeted subflow;
+\item valid address identifier for the malicious IP address used to hijack the connection;
+\end{itemize}
+
+Regarding the last point, the Address ID chosen for the new subflow initiated by the attacker must be different from all the other IDs already used by the other subflows. It is fairly easy to choose a value quite high that has very low probability of being in use already. This value is set to 6 by default in the attack Scapy script.
+
+It is a fair assumption that the four-tuples identifying the connection endpoints are known by the attacker[RFC7430], apart from the client side port value: in that case the difficulty in guessing the right port in use very much depends on the port randomization technique deployed at the client host [RFC6056]. Since it is anyway possible to guess the port, it is a fair simplification to simply provide it to the application in our tests: for this reason the tool has been designed to accept the IP addresses as arguments and automatically gets the ports in use to increase the rate of success in different testing scenarios, without the need for the user to provide that kind of information.
+
+Guessing the SEQ and ACK numbers is by far more complex. Again, all the considerations about this have been reported in previous sections: it is possible to generate a big number of packets trying to guess the acceptable values for packet injection. This is out of scope in this research, so it is acceptable to simplify the attack by providing the SEQ and ACK values (by sniffing them from the ongoing connection).
+
+It is important to emphasize that despite these workarounds, that require to act as a physical man-in-the-middle,  no other information apart from the IP addresses, ports, SEQ and ACK values have been retrieved using Scapy's sniff or tcpdump, and no packet originally sent to the trusted hosts have been discarded or modified. All the sniffed values can be guessed and, despite the reduced chance of success, the exploit could be executed via a 100\% off-path attack. That is why this is considered a major vulnerability for MPTCP deployment as of RFC7430 indications. In the next sections the solution to this problem and its Linux kernel implementation are discussed in the details.
