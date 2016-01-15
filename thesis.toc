@@ -40,58 +40,60 @@
 \defcounter {refsection}{0}\relax 
 \contentsline {chapter}{\numberline {3}MPTCP Security}{5}{chapter.3}
 \defcounter {refsection}{0}\relax 
-\contentsline {section}{\numberline {3.1}Threat Analysis}{5}{section.3.1}
+\contentsline {section}{\numberline {3.1}Threats Analysis}{5}{section.3.1}
 \defcounter {refsection}{0}\relax 
-\contentsline {section}{\numberline {3.2}ADD\_ADDR Attack}{5}{section.3.2}
+\contentsline {subsection}{\numberline {3.1.1}Threats Classifications}{6}{subsection.3.1.1}
 \defcounter {refsection}{0}\relax 
-\contentsline {subsection}{\numberline {3.2.1}Concept}{5}{subsection.3.2.1}
+\contentsline {section}{\numberline {3.2}ADD\_ADDR Attack}{7}{section.3.2}
 \defcounter {refsection}{0}\relax 
-\contentsline {subsection}{\numberline {3.2.2}Procedure}{5}{subsection.3.2.2}
+\contentsline {subsection}{\numberline {3.2.1}Concept}{7}{subsection.3.2.1}
 \defcounter {refsection}{0}\relax 
-\contentsline {subsection}{\numberline {3.2.3}Requirements}{5}{subsection.3.2.3}
+\contentsline {subsection}{\numberline {3.2.2}Procedure}{8}{subsection.3.2.2}
 \defcounter {refsection}{0}\relax 
-\contentsline {section}{\numberline {3.3}Additional Threats}{5}{section.3.3}
+\contentsline {subsection}{\numberline {3.2.3}Requirements}{9}{subsection.3.2.3}
 \defcounter {refsection}{0}\relax 
-\contentsline {subsection}{\numberline {3.3.1}DoS Attack on MP\_JOIN}{5}{subsection.3.3.1}
+\contentsline {section}{\numberline {3.3}Additional Threats}{10}{section.3.3}
 \defcounter {refsection}{0}\relax 
-\contentsline {subsection}{\numberline {3.3.2}Keys Eavesdrop}{5}{subsection.3.3.2}
+\contentsline {subsection}{\numberline {3.3.1}DoS Attack on MP\_JOIN}{10}{subsection.3.3.1}
 \defcounter {refsection}{0}\relax 
-\contentsline {subsection}{\numberline {3.3.3}SYN/ACK Attack}{5}{subsection.3.3.3}
+\contentsline {subsection}{\numberline {3.3.2}Keys eavesdrop}{11}{subsection.3.3.2}
 \defcounter {refsection}{0}\relax 
-\contentsline {chapter}{\numberline {4}ADD\_ADDR Attack Simulation}{6}{chapter.4}
+\contentsline {subsection}{\numberline {3.3.3}SYN/ACK attack}{11}{subsection.3.3.3}
 \defcounter {refsection}{0}\relax 
-\contentsline {section}{\numberline {4.1}Environment Setup}{6}{section.4.1}
+\contentsline {chapter}{\numberline {4}ADD\_ADDR Attack Simulation}{12}{chapter.4}
 \defcounter {refsection}{0}\relax 
-\contentsline {section}{\numberline {4.2}Attack Script}{6}{section.4.2}
+\contentsline {section}{\numberline {4.1}Environment Setup}{12}{section.4.1}
 \defcounter {refsection}{0}\relax 
-\contentsline {section}{\numberline {4.3}Reproducing the Attack}{6}{section.4.3}
+\contentsline {section}{\numberline {4.2}Attack Script}{12}{section.4.2}
 \defcounter {refsection}{0}\relax 
-\contentsline {section}{\numberline {4.4}Conclusions}{6}{section.4.4}
+\contentsline {section}{\numberline {4.3}Reproducing the Attack}{12}{section.4.3}
 \defcounter {refsection}{0}\relax 
-\contentsline {chapter}{\numberline {5}Fixing ADD\_ADDR}{7}{chapter.5}
+\contentsline {section}{\numberline {4.4}Conclusions}{12}{section.4.4}
 \defcounter {refsection}{0}\relax 
-\contentsline {section}{\numberline {5.1}The ADD\_ADDR2 format}{7}{section.5.1}
+\contentsline {chapter}{\numberline {5}Fixing ADD\_ADDR}{13}{chapter.5}
 \defcounter {refsection}{0}\relax 
-\contentsline {section}{\numberline {5.2}Implementing ADD\_ADDR2}{7}{section.5.2}
+\contentsline {section}{\numberline {5.1}The ADD\_ADDR2 format}{13}{section.5.1}
 \defcounter {refsection}{0}\relax 
-\contentsline {subsection}{\numberline {5.2.1}Retro-compatibility}{7}{subsection.5.2.1}
+\contentsline {section}{\numberline {5.2}Implementing ADD\_ADDR2}{13}{section.5.2}
 \defcounter {refsection}{0}\relax 
-\contentsline {subsection}{\numberline {5.2.2}Port Advertisement}{7}{subsection.5.2.2}
+\contentsline {subsection}{\numberline {5.2.1}Retro-compatibility}{13}{subsection.5.2.1}
 \defcounter {refsection}{0}\relax 
-\contentsline {subsection}{\numberline {5.2.3}IPv6 Considerations}{7}{subsection.5.2.3}
+\contentsline {subsection}{\numberline {5.2.2}Port Advertisement}{13}{subsection.5.2.2}
 \defcounter {refsection}{0}\relax 
-\contentsline {subsection}{\numberline {5.2.4}Crypto-API in MPTCP}{8}{subsection.5.2.4}
+\contentsline {subsection}{\numberline {5.2.3}IPv6 Considerations}{13}{subsection.5.2.3}
 \defcounter {refsection}{0}\relax 
-\contentsline {section}{\numberline {5.3}RFC Contributions}{8}{section.5.3}
+\contentsline {subsection}{\numberline {5.2.4}Crypto-API in MPTCP}{14}{subsection.5.2.4}
 \defcounter {refsection}{0}\relax 
-\contentsline {section}{\numberline {5.4}Experimental Evaluation}{8}{section.5.4}
+\contentsline {section}{\numberline {5.3}RFC Contributions}{14}{section.5.3}
 \defcounter {refsection}{0}\relax 
-\contentsline {chapter}{\numberline {6}Conclusions}{9}{chapter.6}
+\contentsline {section}{\numberline {5.4}Experimental Evaluation}{14}{section.5.4}
 \defcounter {refsection}{0}\relax 
-\contentsline {section}{\numberline {6.1}Related Work}{9}{section.6.1}
+\contentsline {chapter}{\numberline {6}Conclusions}{15}{chapter.6}
 \defcounter {refsection}{0}\relax 
-\contentsline {section}{\numberline {6.2}Future Work}{9}{section.6.2}
+\contentsline {section}{\numberline {6.1}Related Work}{15}{section.6.1}
 \defcounter {refsection}{0}\relax 
-\contentsline {section}{\numberline {6.3}Final Thoughts}{9}{section.6.3}
+\contentsline {section}{\numberline {6.2}Future Work}{15}{section.6.2}
 \defcounter {refsection}{0}\relax 
-\contentsline {chapter}{\numberline {A}An appendix}{10}{appendix.A}
+\contentsline {section}{\numberline {6.3}Final Thoughts}{15}{section.6.3}
+\defcounter {refsection}{0}\relax 
+\contentsline {chapter}{\numberline {A}An appendix}{16}{appendix.A}
