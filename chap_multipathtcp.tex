@@ -8,12 +8,12 @@ MPTCP is an extension of regular TCP, the ubiquitous protocol for highly reliabl
 The reasons why TCP became a de-facto standard in modern computer communication has been briefly mentioned in the introductory part of the paper. A more technical analysis shows that TCP maintains good levels of reliability for the connection independently from the lower layers it depends on for the raw transmission of bits. TCP is indeed able to handle possible data loss, data damaging, data duplication, out of order delivery of data. In order to do this, the data to be transmitted is split into a sequence of TCP packets, each containing an additional \textit{TCP header} with the information needed to operate the protocol functionalities. Such functionalities are [\href{https://tools.ietf.org/html/rfc793}{ref}]:
 
 \begin{itemize}
-  \item Basic Data Transfer: sending continuous stream of octets in each direction between its users, identified by the 4-tuple: source IP address, source port, destination IP address, destination port. The IP address allows to route packets to the destination machines, while the port values direct the content of the packet to the right application within a host;
-  \item Reliability: in-order, reliable data transfer is achieved by adding a sequence number to each transmitted octet and using ACK signals to advertise the current status at the receiver;
-  \item Flow Control: the receiver can control the amount of data sent by the sender returning a "window" value, so that it is possible to avoid buffer congestion;
-  \item Multiplexing: a single host is allowed to use multiple independent TCP connections simultaneously thanks to a socket system that uses addresses and ports as endpoint;
-  \item Connections: TCP initializes and maintains status information regarding each connection between a pair of sockets in order to provide all the functionalities in this list;
-  \item Precedence and Security: such aspects of TCP connection can be tuned by users according to their needs, but default values are provided.
+  \item \textit{Basic Data Transfer}: sending continuous stream of octets in each direction between its users, identified by the 4-tuple: source IP address, source port, destination IP address, destination port. The IP address allows to route packets to the destination machines, while the port values direct the content of the packet to the right application within a host;
+  \item \textit{Reliability}: in-order, reliable data transfer is achieved by adding a sequence number to each transmitted octet and using ACK signals to advertise the current status at the receiver;
+  \item \textit{Flow Control}: the receiver can control the amount of data sent by the sender returning a "window" value, so that it is possible to avoid buffer congestion;
+  \item \textit{Multiplexing}: a single host is allowed to use multiple independent TCP connections simultaneously thanks to a socket system that uses addresses and ports as endpoint;
+  \item \textit{Connections}: TCP initializes and maintains status information regarding each connection between a pair of sockets in order to provide all the functionalities in this list;
+  \item \textit{Precedence and Security}: such aspects of TCP connection can be tuned by users according to their needs, but default values are provided.
 \end{itemize}
 
 As noted above, all these features are made possible by processing the bits at the TCP header. Such structured set of information is mostly static and predefined, so that at each position in the header corresponds a well known portion of the TCP data. The TCP header looks like the one in Figure \ref{fig:tcp_header}.
@@ -32,7 +32,26 @@ Other interesting fields in the header are: the \textit{Window} field, which all
 A component of the TCP header that is fundamental for MPTCP is the \textit{Options} field, which was firstly introduced as a free space for future additions to the protocol. In this specific case, the TLV solution is adopted to process the data inside the field. "TLV" stands for \textit{type-length-value}, where the type is the ID value uniquely identifying the option, the length is the number of bytes of the option, whereas the value represents the actual option content. This particular design allows to skip unknown options at the receiver by simply checking the length value and moving the pointer accordingly. An important limitation for this field is that its total length cannot be higher than 40 bytes [ref].
 
 \section{MPTCP Design}
-How MPTCP is added on top of TCP (with all the related design aspects) is reported here. This is the first portion of the thesis containing a more in-depth description of how MPTCP works in the networking stack. This specific section might follow closely the introductory portions of the RFC documents regarding MPTCP.
+MPTCP functional goals are to increase resilience of the connectivity and efficiency of the resource usage.
+Such goals can be found very similar in other multipathing solutions as the ones described in section [add section], but what is really unique about MPTCP protocol design is the set of its compatibilities goals [\href{https://tools.ietf.org/html/rfc6182}{ref}]:
+
+\begin{itemize}
+  \item \textit{Application compatibility} aims at instantiating a protocol that can be fully operational with no modifications for the applications using it. This means that the networking APIs and the overall service model of regular TCP has to be maintained with MPTCP; the entire MPTCP functioning is handled transparently by the underlying system. Such transparency must be maintained also in terms of throughput, resilience and security for the connection, that cannot be deteriorated with respect to the current TCP standards;
+  \item \textit{Network compatibility} is a similar goal for MPTCP, which is supposed to work out of the box with the current underlying network layer and the ones below it. The main reason still resides in the possibility of achieving a smooth wide-spread deployment of the protocol on the current infrastructure;
+  \item \textit{Users compatibility} is a corollary to both network and application compatibility, which states that MPTCP flows must be fair to regular TCP connection in case of shard bottlenecks.
+\end{itemize}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.75\textwidth]{images/OSI}
+\caption{The traditional Internet architecture}
+\label{fig:OSI}
+\end{figure}
+
+The paragraphs above should explain the very fundamental decision of developing the new multipath protocol at the Transport layer, and more specifically as an extension of regular TCP. Let's take into consideration again the traditional Internet architecture (figure \ref{fig:OSI}) to achieve the required compatibility goals, changes had to be applied to layers lower than the application layer, so that current programs do not have to be upgraded to make use of multipath; on the other side, the new protocol had to be placed at layers above the network layer, which is the last layer still operating at the networking infrastructure before the transport layer, the latter being the first layer operating at the end systems. The choice of working at the transport layer was indeed the only available option. Within that option, the choice of maintaining TCP as the fundamental operating protocol for MPTCP was still required for similar compatibility reasons.
+
+
+More details on how retro-compatibility is reached at the end-systems, refer to the next section where the control plane for MPTCP is presented. 
 
 \subsection{Control Plane}
 All the MPTCP options used to manage MPTCP sessions are reported and explained here, including all the details on how to set a new session and add/remove subflows.
