@@ -54,24 +54,37 @@ The following list gives a general overview of the most important solutions othe
 \vspace{5mm}
 All these previous solutions didn't get widespread adoption. Link Layers and Network Layers solutions require extensive modifications in the underlying network configurations in order to achieve the desired results; introducing a new multipath-aware protocol at the Transport Layer requires to change all the applications in order for them to communicate over the new protocol, thus allowing this solution in very limited scenarios; workarounds at the Application Layer, despite being quite effective, are far from the purpose of MPTCP.
 
-
-MPTCP primary goal is to automatically introduce the multipath benefits to current infrastructures and devices, with the minimum possible effort from users, developers, network maintainers. Engineers decided that the best way to achieve all these requirements was to still make use of TCP as fundamental block, exploiting its extensible TCP Options field to introduce all the custom options needed to handle multipath subflows: the entire protocol design works by adding MPTCP custom options into regular TCP packets, so that MPTCP-aware systems can process such options; if a system that is not MPTCP-aware receives a MPTCP connection-request, it would simply discard the MPTCP options and treat such packet as a plain TCP connection-request. All the subflows connecting the various interfaces in a MPTCP session would look like normal TCP connections to the lower infrastructure. Retro-compatibility is achieved with most of the current systems. For what regards applications, they don't need to be changed either since MPTCP would be inserted into the network stack at the operating system level, it would automatically split the data coming from the Application Layer and send it through different subflows, according to the number of available endpoints at the connected hosts.
+Multipath TCP (MPTCP) is an ongoing project managed by the Internet Engineering Task Force (IETF), whose specifications have been published as Experimental standard in January 2013 [ref RFC 6824]; since then, the protocol has seen a lot of interest in the Internet community and many implementations quickly became available for the most common platforms. 
+MPTCP primary goal is to automatically introduce the multipath benefits to current infrastructures and devices, with the minimum possible effort from users, developers, network maintainers. Engineers decided that the best way to achieve all these requirements was to still make use of TCP as fundamental block, exploiting its extensible TCP Options field to introduce all the custom options needed to handle multipath subflows: the entire protocol design works by adding MPTCP custom options into regular TCP packets, so that MPTCP-aware systems can process such options; if a system that is not MPTCP-aware receives a MPTCP connection-request, it would simply discard the MPTCP options and threat such packet as a plain TCP connection-request. All the subflows connecting the various interfaces in a MPTCP session would look like normal TCP connections to the lower infrastructure. Retro-compatibility is achieved with most of the current systems. For what regards applications, they don't need to be changed either since MPTCP would be inserted into the network stack at the operating system level, it would automatically split the data coming from the Application Layer and send it through different subflows, according to the number of available endpoints at the connected hosts.
 
 \vspace{5mm}
 MPTCP not only aims at providing all the benefits of multipath, but it is also designed to require the minimum possible effort in large-scale deployment. For these reasons, the new protocol got a lot of attention in the Internet community in the last few years, and many consider MPTCP as a valuable step forward for the whole global network currently relying on TCP.
-The final goal of MPTCP is to replace the majority of the current TCP implementations, which is a very delicate process in which all the current TCP standards in terms of robustness and security have to be maintained, if not improved. This paper is an evaluation of the security aspects of MPTCP, with an analysis of current treats and vulnerabilities affecting the protocol.
+The final goal of MPTCP is to replace the majority of the current TCP implementations, which is a very delicate process in which all the current TCP standards in terms of robustness and security have to be maintained, if not improved. This paper is an evaluation of the security aspects of MPTCP, with an analysis of current threats and vulnerabilities affecting the protocol.
 
 \section{Problem Statement}
-This part should introduce the content and the main focus of this paper, as well as presenting the objectives of the thesis:
+MPTCP is a big effort from the IETF working group to unlock multipath networking capabilities worldwide, with many subtle implications for current infrastructures. Hence the importance of evaluating the current security status of MPTCP, both by inspecting its implications on external middleboxes and security equipment and by analyzing internal design flaws that might allow attacks to the MPTCP sessions. The main focus of this paper is on the latter case. The main vulnerability currently known for the protocol, related to the ADD\_ADDR component, is tested and studied; the solution for it is implemented and evaluated. In the process, actual patches for the Linux kernel implementation of the protocol have been developed to fix the vulnerability. 
+
+
+A comprehensive list of all the objective for the thesis follows:
 \begin{itemize}
-    \item studying the security implications of adopting MPTCP on current infrastructures; 
-    \item listing the known vulnerabilities affecting the current version of the protocol; 
-    \item fixing the ADD\_ADDR vulnerability of the protocol; 
-    \item developing effective and powerful simulation scenarios in order to test MPTCP;
-    \item contributing to the upstreaming of the protocol into the Linux kernel by developing patches and improving official RFC documentation.
+    \item Studying the security implications of adopting MPTCP on current infrastructures; 
+    \item Listing the known vulnerabilities affecting the current version of the protocol; 
+    \item Studying the ADD\_ADDR vulnerability of the protocol;
+    \item Evaluating the possible solutions for the ADD\_ADDR vulnerability; 
+    \item Assessing the best solution for the ADD\_ADDR vulnerability and developing it for the Linux kernel implementation of MPTCP;
+    \item Developing effective and powerful simulation scenarios in order to test MPTCP (and possibly other networking protocols);
+    \item Contributing to the upstreaming of MPTCP into the Linux kernel by developing patches and contributing to official RFC documentation.
 \end{itemize}
 
 \section{Methodology}
-This section should contain a short road map with the various step taken to fix the addressed problems and the general methodology adopted for the thesis' work.
-Perhaps, it is possible to cite here the working environment and the parties involved. 
-This section might end up with an explanation about the structure of the paper.
+The thesis work has been carried out at the Intel office in Lund, Sweden. The process took 6 months in total, with a main focus on testing and developing. The entire work has been closely followed by major stakeholders in the MPTCP community, located in Sweden, Romania and the United States. Such cooperation involved patch reviewing and weekly meetings.
+
+
+The work flow started with an overall study of MPTCP and how it interacts with the most common middleboxes. The next step was a more focused evaluation of the current threats for the protocol by using as reference the document RFC 7430. Within the document, only one vulnerability is considered a blocking issue in the advancement of MPTCP standardization, known as the ADD\_ADDR vulnerability. The document also proposes a change in the protocol design that fixes the problem, and with such reference the actual development part of the work started.
+
+
+At first, it was necessary to sync with the development status by interacting with the official MPTCP mailing list for developers [\href{https://listes-2.sipr.ucl.ac.be/sympa}{ref}]; this allowed to make sure that the ADD\_ADDR solution proposed in RFC 7430 was indeed the preferred one and that nobody started developing a patch for it already.
+Before starting to work on the fix, a first stage of the work involved a deeper analysis of the ADD\_ADDR vulnerability. A connection hijacking has been executed by exploiting such vulnerability in a testing environment. This allowed to better validated the criticality of the problem and it was a useful experiment to get acquainted with MPTCP. Moreover, it was a good way to setup a proper testing environment that was indeed used during the whole patch-development process that followed.
+
+
+After having reproduced the attack there was an analysis of the MPTCP modules within the Linux kernel in order to understand how the protocol implementation works inside the TCP stack. The development work that followed involved side features that came out to be necessary for a proper functioning, including some final testing.
