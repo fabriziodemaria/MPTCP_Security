@@ -1,10 +1,35 @@
 \chapter{Multipath TCP}
 \label{chap:multipathtcp}
 
-From now on the discussion becomes more technical. This chapter is all about how MPTCP works from a technical perspective. In this chapter there is no reference about the work carried out during the stage but only information taken from external documentation.
-
 \section{Transmission Control Protocol (TCP)}
-This is an explanation on how plain TCP protocol works. Even if there is no need to go into too much details here, this is a necessary starting point from where the MPTCP extension discussion can start (in the next section).
+MPTCP is an extension of regular TCP, the ubiquitous protocol for highly reliable host-to-host communication in a packet-switched computer network. A proper introduction of the fundamental of TCP is due.
+
+
+The reasons why TCP became a de-facto standard in modern computer communication has been briefly mentioned in the introductory part of the paper. A more technical analysis shows that TCP maintains good levels of reliability for the connection independently from the lower layers it depends on for the raw transmission of bits. TCP is indeed able to handle possible data loss, data damaging, data duplication, out of order delivery of data. In order to do this, the data to be transmitted is split into a sequence of TCP packets, each containing an additional \textit{TCP header} with the information needed to operate the protocol functionalities. Such functionalities are [\href{https://tools.ietf.org/html/rfc793}{ref}]:
+
+\begin{itemize}
+  \item Basic Data Transfer: sending continuous stream of octets in each direction between its users, identified by the 4-tuple: source IP address, source port, destination IP address, destination port. The IP address allows to route packets to the destination machines, while the port values direct the content of the packet to the right application within a host;
+  \item Reliability: in-order, reliable data transfer is achieved by adding a sequence number to each transmitted octet and using ACK signals to advertise the current status at the receiver;
+  \item Flow Control: the receiver can control the amount of data sent by the sender returning a "window" value, so that it is possible to avoid buffer congestion;
+  \item Multiplexing: a single host is allowed to use multiple independent TCP connections simultaneously thanks to a socket system that uses addresses and ports as endpoint;
+  \item Connections: TCP initializes and maintains status information regarding each connection between a pair of sockets in order to provide all the functionalities in this list;
+  \item Precedence and Security: such aspects of TCP connection can be tuned by users according to their needs, but default values are provided.
+\end{itemize}
+
+As noted above, all these features are made possible by processing the bits at the TCP header. Such structured set of information is mostly static and predefined, so that at each position in the header corresponds a well known portion of the TCP data. The TCP header looks like the one in Figure \ref{fig:tcp_header}.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.75\textwidth]{images/tcp_header}
+\caption{The TCP header format}
+\label{fig:tcp_header}
+\end{figure}
+
+The \textit{Source Port} and \textit{Destination Port}, together with the source and destination IP addresses provided in the upper IP header (not shown in figure \ref{fig:tcp_header}), are the means for identifying the two endpoints of the TCP connection. \textbf{These static fields clearly shows the single-path fundamental design of the protocol}. \textit{Sequence Number}, \textit{Acknowledgment Number} and \textit{Data Offset} are three fields used to guarantee reliable and in-order data transmission; numbering each octet it is possible to put them in sequence and acknowledge them in a cumulative way, so that by acknowledging sequence number X means that all packets up to but not including X has been received. This system, together with timeouts, allows for retransmission of lost packets.
+Other interesting fields in the header are: the \textit{Window} field, which allows to achieve congestion control by telling to the sender the range of sequence numbers the data receiver is prepared to accept in a particular instance of time; the \textit{Checksum} field, which guarantees that data has not been modified on its way to the destination (thus being part of the reliability aspect of the protocol).
+
+
+A component of the TCP header that is fundamental for MPTCP is the \textit{Options} field, which was firstly introduced as a free space for future additions to the protocol. In this specific case, the TLV solution is adopted to process the data inside the field. "TLV" stands for \textit{type-length-value}, where the type is the ID value uniquely identifying the option, the length is the number of bytes of the option, whereas the value represents the actual option content. This particular design allows to skip unknown options at the receiver by simply checking the length value and moving the pointer accordingly. An important limitation for this field is that its total length cannot be higher than 40 bytes [ref].
 
 \section{MPTCP Design}
 How MPTCP is added on top of TCP (with all the related design aspects) is reported here. This is the first portion of the thesis containing a more in-depth description of how MPTCP works in the networking stack. This specific section might follow closely the introductory portions of the RFC documents regarding MPTCP.

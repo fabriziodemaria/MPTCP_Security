@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.10.5)  19 JAN 2016 11:25
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.10.5)  19 JAN 2016 14:42
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1214,16 +1214,9 @@ Package biblatex Info: Trying to load language 'english'...
 Package biblatex Info: ... file 'english.lbx' found.
  (/usr/share/texlive/texmf-dist/tex/latex/biblatex/lbx/english.lbx
 File: english.lbx 2013/11/25 v2.8a biblatex localization (PK/JW/AB)
-) (./chap_introduction.aux
-
-LaTeX Warning: Label `fig:networkscenario' multiply defined.
-
-) (./chap_multipathtcp.aux) (./chap_mptcpsecurity.aux)
-(./chap_addaddrattackexecution.aux
-
-LaTeX Warning: Label `fig:networkscenario' multiply defined.
-
-) (./chap_addaddr2.aux) (./chap_conclusions.aux) (./app_a.aux))
+) (./chap_introduction.aux) (./chap_multipathtcp.aux) (./chap_mptcpsecurity.aux
+) (./chap_addaddrattackexecution.aux) (./chap_addaddr2.aux)
+(./chap_conclusions.aux) (./app_a.aux))
 \openout1 = `thesis.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 165.
@@ -1458,12 +1451,12 @@ Package pdftex.def Info: images/internet_growth.png used on input line 12.
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
  [2]
-<images/smartphones.png, id=289, 534.99875pt x 224.84pt>
+<images/smartphones.png, id=289, 2674.99374pt x 1119.18124pt>
 File: images/smartphones.png Graphic file (type png)
 
 <use images/smartphones.png>
 Package pdftex.def Info: images/smartphones.png used on input line 27.
-(pdftex.def)             Requested size: 320.0935pt x 134.52765pt.
+(pdftex.def)             Requested size: 320.0935pt x 133.92024pt.
  [3 <./images/smartphones.png>]
 LaTeX Font Info:    Try loading font information for TS1+lmr on input line 44.
 
@@ -1479,26 +1472,33 @@ Chapter 2.
 
 
 
-]) [9]
+] <images/tcp_header.png, id=324, 878.28125pt x 538.01pt>
+File: images/tcp_header.png Graphic file (type png)
+
+<use images/tcp_header.png>
+Package pdftex.def Info: images/tcp_header.png used on input line 23.
+(pdftex.def)             Requested size: 320.0935pt x 196.08058pt.
+ [9 <./images/tcp_header.png>]) [10] [11]
 \openout2 = `chap_mptcpsecurity.aux'.
 
- (./chap_mptcpsecurity.tex
+
+(./chap_mptcpsecurity.tex
 Chapter 3.
-[10
+[12
 
 
 
-] [11] [12] <images/Attack1.png, id=340, 735.74875pt x 285.065pt>
+] [13] [14] <images/Attack1.png, id=354, 735.74875pt x 285.065pt>
 File: images/Attack1.png Graphic file (type png)
 
 <use images/Attack1.png>
 Package pdftex.def Info: images/Attack1.png used on input line 75.
 (pdftex.def)             Requested size: 426.79135pt x 165.3639pt.
- [13 <./images/Attack1.png>] [14]
+ [15 <./images/Attack1.png>] [16]
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
- [15]
-[16]) [17]
+ [17]
+[18]) [19]
 \openout2 = `chap_addaddrattackexecution.aux'.
 
  (./chap_addaddrattackexecution.tex
@@ -1513,12 +1513,12 @@ LaTeX Font Info:    Try loading font information for T1+lmtt on input line 15.
 
 (/usr/share/texmf/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
-) [18
+) [20
 
 
 
 ]
-<images/Network_Scenario.png, id=386, 785.93625pt x 253.94875pt>
+<images/Network_Scenario.png, id=400, 785.93625pt x 253.94875pt>
 File: images/Network_Scenario.png Graphic file (type png)
 
 <use images/Network_Scenario.png>
@@ -1527,10 +1527,10 @@ Package pdftex.def Info: images/Network_Scenario.png used on input line 46.
 
 Underfull \vbox (badness 3568) has occurred while \output is active []
 
- [19 <./images/Network_Scenario.png>]
+ [21 <./images/Network_Scenario.png>]
 Underfull \vbox (badness 1742) has occurred while \output is active []
 
- [20]
+ [22]
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10> not available
 (Font)              Font shape `T1/lmtt/b/n' tried instead on input line 82.
 
@@ -1538,21 +1538,21 @@ Overfull \hbox (27.91307pt too wide) in paragraph at lines 83--84
 [][][][][][][][][][][][][][] 
  []
 
-[21] [22] [23] [24]) [25]
+[23] [24] [25] [26]) [27]
 \openout2 = `chap_addaddr2.aux'.
 
  (./chap_addaddr2.tex
 Chapter 5.
-[26
+[28
 
 
 
-]) [27]
+]) [29]
 \openout2 = `chap_conclusions.aux'.
 
  (./chap_conclusions.tex
 Chapter 6.
-) [28
+) [30
 
 
 
@@ -1561,7 +1561,7 @@ Chapter 6.
 
  (./app_a.tex
 Appendix A.
-) [29
+) [31
 
 
 
@@ -1583,9 +1583,6 @@ Package rerunfilecheck Info: File `thesis.out' has not changed.
 LaTeX Warning: There were undefined references.
 
 
-LaTeX Warning: There were multiply-defined labels.
-
-
 Package biblatex Warning: Please (re)run BibTeX on the file(s):
 (biblatex)                thesis
 (biblatex)                and rerun LaTeX afterwards.
@@ -1595,10 +1592,10 @@ Package logreq Info: Writing requests to 'thesis.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 17836 strings out of 493304
- 269688 string characters out of 6139871
+ 17847 strings out of 493304
+ 269889 string characters out of 6139871
  521479 words of memory out of 5000000
- 20802 multiletter control sequences out of 15000+600000
+ 20809 multiletter control sequences out of 15000+600000
  68035 words of font info for 55 fonts, out of 8000000 for 9000
  957 hyphenation exceptions out of 8191
  44i,10n,49p,1812b,2032s stack positions out of 5000i,500n,10000p,200000b,80000s
@@ -1611,10 +1608,10 @@ mf/fonts/type1/public/lm/lmr12.pfb></usr/share/texmf/fonts/type1/public/lm/lmr1
 type1/public/lm/lmri10.pfb></usr/share/texmf/fonts/type1/public/lm/lmro9.pfb></
 usr/share/texmf/fonts/type1/public/lm/lmtk10.pfb></usr/share/texmf/fonts/type1/
 public/lm/lmtt10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtti10.pfb>
-Output written on thesis.pdf (35 pages, 580194 bytes).
+Output written on thesis.pdf (37 pages, 685550 bytes).
 PDF statistics:
- 552 PDF objects out of 1000 (max. 8388607)
- 489 compressed objects within 5 object streams
- 131 named destinations out of 1000 (max. 500000)
- 402 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 570 PDF objects out of 1000 (max. 8388607)
+ 503 compressed objects within 6 object streams
+ 134 named destinations out of 1000 (max. 500000)
+ 407 words of extra memory for PDF output out of 10000 (max. 10000000)
 
