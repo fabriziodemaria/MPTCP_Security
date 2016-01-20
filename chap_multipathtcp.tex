@@ -41,12 +41,6 @@ Such goals can be found very similar in other multipathing solutions as the ones
   \item \textit{Users compatibility} is a corollary to both network and application compatibility, which states that MPTCP flows must be fair to regular TCP connection in case of shard bottlenecks.
 \end{itemize}
 
-\begin{figure}[!htb]
-\centering
-\includegraphics[width=0.75\textwidth]{images/OSI}
-\caption{The traditional Internet architecture}
-\label{fig:OSI}
-\end{figure}
 
 The paragraphs above should explain the very fundamental decision of developing the new multipath protocol at the Transport layer, and more specifically as an extension of regular TCP. Let's take into consideration again the traditional Internet architecture (figure \ref{fig:OSI}) to achieve the required compatibility goals, changes had to be applied to layers lower than the application layer, so that current programs do not have to be upgraded to make use of multipath; on the other side, the new protocol had to be placed at layers above the network layer, which is the last layer still operating at the networking infrastructure before the transport layer, the latter being the first layer operating at the end systems. The choice of working at the transport layer was indeed the only available option. Within that option, the choice of maintaining TCP as the fundamental operating protocol for MPTCP was still required for similar compatibility reasons.
 
