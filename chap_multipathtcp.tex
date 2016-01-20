@@ -9,11 +9,11 @@ The reasons why TCP became a de-facto standard in modern computer communication 
 
 \begin{itemize}
   \item \textit{Basic Data Transfer}: sending continuous stream of octets in each direction between its users, identified by the 4-tuple: source IP address, source port, destination IP address, destination port. The IP address allows to route packets to the destination machines, while the port values direct the content of the packet to the right application within a host;
-  \item \textit{Reliability}: in-order, reliable data transfer is achieved by adding a sequence number to each transmitted octet and using ACK signals to advertise the current status at the receiver;
+  \item \textit{Reliability}: in-order, reliable data transfer is achieved by adding a sequence number to each transmitted octet and using ACK signals and timeouts to possibly trigger retransmission of lost packets. TCP assures that no transmission errors will affect the delivery of the data assuming that the network will not be completely partitioned;
   \item \textit{Flow Control}: the receiver can control the amount of data sent by the sender returning a "window" value, so that it is possible to avoid buffer congestion;
-  \item \textit{Multiplexing}: a single host is allowed to use multiple independent TCP connections simultaneously thanks to a socket system that uses addresses and ports as endpoint;
-  \item \textit{Connections}: TCP initializes and maintains status information regarding each connection between a pair of sockets in order to provide all the functionalities in this list;
-  \item \textit{Precedence and Security}: such aspects of TCP connection can be tuned by users according to their needs, but default values are provided.
+  \item \textit{Multiplexing}: a single host is allowed to use multiple independent TCP connections simultaneously thanks to the port value available in the protocol. This value, together with the host address assigned at the internet communication layer, forms a socket, that is the actual endpoint of a TCP connection;
+  \item \textit{Connections}: TCP initializes and maintains status information regarding each connection and the data stream between a pair of sockets in order to provide all its functionalities. Such status information is initialized during a first handshake procedure, and released only upon connection termination;
+  \item \textit{Precedence and Security}: such aspects of the TCP connections can be tuned by users, but default values are provided.
 \end{itemize}
 
 As noted above, all these features are made possible by processing the bits at the TCP header. Such structured set of information is mostly static and predefined, so that at each position in the header corresponds a well known portion of the TCP data. The TCP header looks like the one in Figure \ref{fig:tcp_header}.
@@ -42,10 +42,32 @@ Such goals can be found very similar in other multipathing solutions as the ones
 \end{itemize}
 
 
-The paragraphs above should explain the very fundamental decision of developing the new multipath protocol at the Transport layer, and more specifically as an extension of regular TCP. Let's take into consideration again the traditional Internet architecture (figure \ref{fig:OSI}) to achieve the required compatibility goals, changes had to be applied to layers lower than the application layer, so that current programs do not have to be upgraded to make use of multipath; on the other side, the new protocol had to be placed at layers above the network layer, which is the last layer still operating at the networking infrastructure before the transport layer, the latter being the first layer operating at the end systems. The choice of working at the transport layer was indeed the only available option. Within that option, the choice of maintaining TCP as the fundamental operating protocol for MPTCP was still required for similar compatibility reasons.
+All these compatibilities requirements should explain the very fundamental decision of developing the new multipath protocol at the transport layer, and more specifically as an extension of regular TCP. Let's take into consideration the traditional TCP protocol stack and compare it to the new MPTCP stack in figure \ref{fig:stack}.
 
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.75\textwidth]{images/stack}
+\caption{The TCP and MPTCP protocol stacks}
+\label{fig:stack}
+\end{figure}
 
-More details on how retro-compatibility is reached at the end-systems, refer to the next section where the control plane for MPTCP is presented. 
+To achieve the required compatibility goals, changes had to be applied to layers lower than the application layer, so that current programs do not have to be upgraded to make use of multipath; on the other side, the new protocol had to be placed at layers above the network layer, which is the last layer still operating at the networking infrastructure before the transport layer, the latter being the first layer operating at the end systems. The choice of working at the transport layer was indeed the only available option. Within that option, the choice of maintaining TCP as the fundamental operating protocol for MPTCP was still required for similar compatibility reasons; for this very purpose engineers decided to add all the required options for MPTCP functioning inside the TCP Option field in the TCP header. In this way, MPTCP-aware systems can process the MPTCP options for multipathing, but if a system that is not MPTCP-aware receives a MPTCP connection-request, it would simply discard the MPTCP options and threat such message as a plain TCP connection-request. For what regards applications, they don't need to be changed either since MPTCP would be inserted into the network stack at the operating system level; it would automatically split the data buffered from the application layer and send it through different subflows, according to the number of available endpoints at the connected hosts.
+
+\vspace{5mm}
+There is only a single generic MPTCP option, to which has been assigned the value 30 as the "Kind" identifier. At a lower level it is possible to identify a set of eight MPTCP option subtypes:
+
+\begin{itemize}
+  \item MP\_CAPABLE (Multipath Capable);
+  \item MP\_JOIN (Join Connection);
+  \item DSS (Data Sequence Signal);
+  \item ADD\_ADDR (Add Address);
+  \item REMOVE\_ADDR (Remove Address);
+  \item MP\_PRIO (Change Subflow Priority);
+  \item MP\_FAIL (Fallback);
+  \item MP\_FASTCLOSE (Fast Close).
+\end{itemize}
+
+All of these options are used to handle the multiple subflow in a MPTCP session and the data transfer within the same session, thus falling into two main categories: control plane and data plane. 
 
 \subsection{Control Plane}
 All the MPTCP options used to manage MPTCP sessions are reported and explained here, including all the details on how to set a new session and add/remove subflows.
