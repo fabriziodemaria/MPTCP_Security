@@ -70,7 +70,27 @@ There is only a single generic MPTCP option, to which has been assigned the valu
 All of these options are used to handle the multiple subflow in a MPTCP session and the data transfer within the same session, thus falling into two main categories: control plane and data plane. 
 
 \subsection{Control Plane}
-All the MPTCP options used to manage MPTCP sessions are reported and explained here, including all the details on how to set a new session and add/remove subflows.
+The connection initiation of an MPTCP session is very similar to the standard TCP initial handshake, involving a SYN, SYN/ACK and ACK exchange on a single path between host A and host B. The SYN packet from host A will have a MP\_CAPABLE option in the \textit{Options} field of the TCP header; apart from that, the rest of the packet behaves exactly as in regular TCP: in fact, if the receiver host B is not MPTCP-compatible it will simply discard the MP\_CAPABLE option and instantiate a regular TCP connection.
+In case both hosts are MPTCP-compatible, the MP\_CAPABLE option is inserted in the three packets of the initial handshake on order to exchange two 64-bit keys, according to the scheme in figure \ref{fig:mpcapable}.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.75\textwidth]{images/mpcapable}
+\caption{MPTCP connection initiation}
+\label{fig:mpcapable}
+\end{figure}
+
+These keys are sent in clear only during the initial handshake; subsequently, shorter 32 bit tokens derived from such keys will be used to address a specific MPTCP session. This is useful when associating a new subflow to an existing MPTCP connection.
+
+\vspace{5mm}
+Suppose that after the first subflow is operational, host A initiates a new subflow between one of its addresses and one of host B's addresses (figure \ref{fig:mpjoin}). Host A sends a TCP packet to host B containing the MP\_JOIN option, which includes Token-B (the token derived B's key) and a nonce value used to prevent replay attacks. An additional field in the MP\_JOIN option is called Address ID, an identifier for the original addresses in use within a single MPTCP connection; this additional value allows to refer to a well known subflow without the need to check the addresses, which is very useful when middleboxes like NATs alter the IP header during the transit of the packets.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.75\textwidth]{images/mpjoin}
+\caption{MPTCP additional subflows}
+\label{fig:mpjoin}
+\end{figure}
 
 \subsection{Data Plane}
 This part concerns all the MPTCP options used to manage the data flow in a MPTCP session, including how the byte stream is subdivided into different subflow and how the original order of the packets is provided at the receiver.
