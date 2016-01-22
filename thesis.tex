@@ -1,4 +1,4 @@
-\documentclass[11pt,english]{toptesi}
+\documentclass[pdfa,11pt,english]{toptesi}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -51,12 +51,11 @@
 % PYTHON - BIANCO E NERO
 \lstset{%
 	captionpos=b,
-	language=python,
+	language=Python,
 	basicstyle =\small\ttfamily,
 	keywordstyle=\color{black}\bfseries,
 	breaklines=true,
 	breakatwhitespace=true,
-	showstringspaces=false,
 	frame=lines,
 	numbers=left,
 	numberstyle=\footnotesize,
@@ -113,7 +112,7 @@
 \titolo{MPTCP Security Evaluation}
 
 % SOTTOTITOLO
-\sottotitolo{Analyzing and fixing critical MPTCP vulnerabilities, contributing to the Linux kernel implementation of the protocol}
+\sottotitolo{Analysing and fixing critical MPTCP vulnerabilities, contributing to the Linux kernel implementation of the protocol}
 
 % RELATORE/I - DICITURA
 \AdvisorName{Advisors}
@@ -126,7 +125,7 @@
 % TUTORE AZIENDALE - TITOLO NOME E COGNOME
 \tutoreaziendale{Henrik Svensson\\Joakim Nordell\\Shujuan Chen}
 % TUTORE AZIENDALE - DICITURA//AZIENDA
-\NomeTutoreAziendale{Company tutors\\Intel Corporation Inc}
+\NomeTutoreAziendale{Company tutors\\Intel Corporation}
 
 % CANDIDATO - DICITURA (MANTENERE I DUE PUNTI)
 \CandidateName{Candidate:}
@@ -146,18 +145,20 @@
 
 % LISTA DEI CAPITOLI DA INCLUDERE - PERSONALIZZARE
 \includeonly{%
-chap_introduction,%
-chap_multipathtcp,%
-chap_mptcpsecurity,%
-chap_addaddrattackexecution,%
-chap_addaddr2,%
-chap_conclusions,%
-app_a,%
+  chap_introduction,%
+  chap_multipathtcp,%
+  chap_mptcpsecurity,%
+  chap_addaddrattackexecution,%
+  chap_addaddr2,%
+  chap_conclusions,%
+  app_a,%
 }
 
 % FILE DI BIBLIOGRAFIA
 \bibliography{bibliography} 
 
+% FILE COMANDI DA TEMPLATE LIOY
+\input{commands.tex}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -172,8 +173,8 @@ app_a,%
 
 %INTERLINEA - DEFAULT 1
 %\interlinea{1.2}
-%\advance\voffset -5mm
-%\advance\textheight 30mm
+\advance\voffset -5mm
+\advance\textheight 30mm
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
