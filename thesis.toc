@@ -20,39 +20,45 @@
 \contentsline {section}{\numberline {2.2}MPTCP design}{11}{section.2.2}
 \contentsline {subsection}{\numberline {2.2.1}Control plane}{13}{subsection.2.2.1}
 \contentsline {subsubsection}{MP\_CAPABLE}{13}{section*.11}
-\contentsline {subsubsection}{MP\_JOIN}{13}{section*.13}
-\contentsline {subsection}{\numberline {2.2.2}Data plane}{14}{subsection.2.2.2}
-\contentsline {section}{\numberline {2.3}MPTCP deployment}{14}{section.2.3}
-\contentsline {subsection}{\numberline {2.3.1}Middleboxes compatibility}{14}{subsection.2.3.1}
-\contentsline {subsection}{\numberline {2.3.2}Implementations}{14}{subsection.2.3.2}
-\contentsline {subsection}{\numberline {2.3.3}Deployment status}{14}{subsection.2.3.3}
-\contentsline {chapter}{\numberline {3}MPTCP security}{16}{chapter.3}
-\contentsline {section}{\numberline {3.1}Threats analysis}{16}{section.3.1}
-\contentsline {subsection}{\numberline {3.1.1}Threats classifications}{17}{subsection.3.1.1}
-\contentsline {section}{\numberline {3.2}ADD\_ADDR attack}{18}{section.3.2}
-\contentsline {subsection}{\numberline {3.2.1}Concept}{18}{subsection.3.2.1}
-\contentsline {subsection}{\numberline {3.2.2}Procedure}{19}{subsection.3.2.2}
-\contentsline {subsection}{\numberline {3.2.3}Requirements}{20}{subsection.3.2.3}
-\contentsline {section}{\numberline {3.3}Additional threats}{21}{section.3.3}
-\contentsline {subsection}{\numberline {3.3.1}DoS attack on MP\_JOIN}{21}{subsection.3.3.1}
-\contentsline {subsection}{\numberline {3.3.2}Keys eavesdrop}{22}{subsection.3.3.2}
-\contentsline {subsection}{\numberline {3.3.3}SYN/ACK attack}{22}{subsection.3.3.3}
-\contentsline {chapter}{\numberline {4}ADD\_ADDR attack simulation}{23}{chapter.4}
-\contentsline {section}{\numberline {4.1}Environment setup}{23}{section.4.1}
-\contentsline {section}{\numberline {4.2}Attack script}{26}{section.4.2}
-\contentsline {section}{\numberline {4.3}Reproducing the attack}{27}{section.4.3}
-\contentsline {section}{\numberline {4.4}Conclusions}{28}{section.4.4}
-\contentsline {chapter}{\numberline {5}Fixing ADD\_ADDR}{30}{chapter.5}
-\contentsline {section}{\numberline {5.1}The ADD\_ADDR2 format}{30}{section.5.1}
-\contentsline {section}{\numberline {5.2}Implementing ADD\_ADDR2}{30}{section.5.2}
-\contentsline {subsection}{\numberline {5.2.1}Retro-compatibility}{30}{subsection.5.2.1}
-\contentsline {subsection}{\numberline {5.2.2}Port advertisement}{30}{subsection.5.2.2}
-\contentsline {subsection}{\numberline {5.2.3}IPv6 considerations}{31}{subsection.5.2.3}
-\contentsline {subsection}{\numberline {5.2.4}Crypto-API in MPTCP}{31}{subsection.5.2.4}
-\contentsline {section}{\numberline {5.3}Other contributions}{31}{section.5.3}
-\contentsline {section}{\numberline {5.4}Experimental evaluation}{31}{section.5.4}
-\contentsline {chapter}{\numberline {6}Conclusions}{32}{chapter.6}
-\contentsline {section}{\numberline {6.1}Related work}{32}{section.6.1}
-\contentsline {section}{\numberline {6.2}Future work}{32}{section.6.2}
-\contentsline {section}{\numberline {6.3}Final thoughts}{32}{section.6.3}
-\contentsline {chapter}{\numberline {A}An appendix}{33}{appendix.A}
+\contentsline {subsubsection}{MP\_JOIN}{14}{section*.14}
+\contentsline {subsubsection}{ADD\_ADDR}{16}{section*.19}
+\contentsline {subsubsection}{REMOVE\_ADDR}{17}{section*.21}
+\contentsline {subsubsection}{MP\_FASTCLOSE}{17}{section*.23}
+\contentsline {subsubsection}{MP\_FAIL}{18}{section*.25}
+\contentsline {subsubsection}{MP\_PRIO}{19}{section*.27}
+\contentsline {subsection}{\numberline {2.2.2}Data plane}{19}{subsection.2.2.2}
+\contentsline {subsubsection}{DSS option}{19}{section*.29}
+\contentsline {section}{\numberline {2.3}MPTCP deployment}{19}{section.2.3}
+\contentsline {subsection}{\numberline {2.3.1}Middleboxes compatibility}{19}{subsection.2.3.1}
+\contentsline {subsection}{\numberline {2.3.2}Implementations}{19}{subsection.2.3.2}
+\contentsline {subsection}{\numberline {2.3.3}Deployment status}{20}{subsection.2.3.3}
+\contentsline {chapter}{\numberline {3}MPTCP security}{21}{chapter.3}
+\contentsline {section}{\numberline {3.1}Threats analysis}{21}{section.3.1}
+\contentsline {subsection}{\numberline {3.1.1}Threats classifications}{22}{subsection.3.1.1}
+\contentsline {section}{\numberline {3.2}ADD\_ADDR attack}{23}{section.3.2}
+\contentsline {subsection}{\numberline {3.2.1}Concept}{23}{subsection.3.2.1}
+\contentsline {subsection}{\numberline {3.2.2}Procedure}{24}{subsection.3.2.2}
+\contentsline {subsection}{\numberline {3.2.3}Requirements}{25}{subsection.3.2.3}
+\contentsline {section}{\numberline {3.3}Additional threats}{26}{section.3.3}
+\contentsline {subsection}{\numberline {3.3.1}DoS attack on MP\_JOIN}{26}{subsection.3.3.1}
+\contentsline {subsection}{\numberline {3.3.2}Keys eavesdrop}{27}{subsection.3.3.2}
+\contentsline {subsection}{\numberline {3.3.3}SYN/ACK attack}{27}{subsection.3.3.3}
+\contentsline {chapter}{\numberline {4}ADD\_ADDR attack simulation}{28}{chapter.4}
+\contentsline {section}{\numberline {4.1}Environment setup}{28}{section.4.1}
+\contentsline {section}{\numberline {4.2}Attack script}{31}{section.4.2}
+\contentsline {section}{\numberline {4.3}Reproducing the attack}{32}{section.4.3}
+\contentsline {section}{\numberline {4.4}Conclusions}{33}{section.4.4}
+\contentsline {chapter}{\numberline {5}Fixing ADD\_ADDR}{35}{chapter.5}
+\contentsline {section}{\numberline {5.1}The ADD\_ADDR2 format}{35}{section.5.1}
+\contentsline {section}{\numberline {5.2}Implementing ADD\_ADDR2}{35}{section.5.2}
+\contentsline {subsection}{\numberline {5.2.1}Retro-compatibility}{35}{subsection.5.2.1}
+\contentsline {subsection}{\numberline {5.2.2}Port advertisement}{35}{subsection.5.2.2}
+\contentsline {subsection}{\numberline {5.2.3}IPv6 considerations}{36}{subsection.5.2.3}
+\contentsline {subsection}{\numberline {5.2.4}Crypto-API in MPTCP}{36}{subsection.5.2.4}
+\contentsline {section}{\numberline {5.3}Other contributions}{36}{section.5.3}
+\contentsline {section}{\numberline {5.4}Experimental evaluation}{36}{section.5.4}
+\contentsline {chapter}{\numberline {6}Conclusions}{37}{chapter.6}
+\contentsline {section}{\numberline {6.1}Related work}{37}{section.6.1}
+\contentsline {section}{\numberline {6.2}Future work}{37}{section.6.2}
+\contentsline {section}{\numberline {6.3}Final thoughts}{37}{section.6.3}
+\contentsline {chapter}{\numberline {A}An appendix}{38}{appendix.A}
