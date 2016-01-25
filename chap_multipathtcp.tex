@@ -224,6 +224,17 @@ It is possible to indicate if a path has to be used regularly or just as backup 
 This part concerns all the MPTCP options used to manage the data flow in a MPTCP connection, including how the byte stream is subdivided into different subflow and how the original order of the packets is provided at the receiver.
 
 \subsubsection{DSS option}
+In order for the receiver to reassemble the correct data stream in MPTCP, there is a specific option called DSS that contains the data mapping and Data ACK. Data mapping is used to map the sequence space at each subflow (which is independently handled by the TCP protocol) and the overall sequence space at connection level. Data ACK is the procedure to acknowledge data receipt at connection level in MPTCP.
+The DSS option can also signal the equivalent of a TCP FIN for the overall MPTCP connection, meaning that the current mapping covers the final data from the sender. 
+This option might also include the checksum field to perform integrity checks on the payload.
+DSS is indeed a versatile packet, whose behavior is mainly defined by the appropriate flags (figure \ref{fig:opt_dss}). 
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.75\textwidth]{images/opt_dss}
+\caption{DSS option}
+\label{fig:opt_dss}
+\end{figure}
 
 
 \section{MPTCP deployment}

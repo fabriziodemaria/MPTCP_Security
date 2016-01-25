@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.10.5)  25 JAN 2016 16:35
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.10.5)  25 JAN 2016 17:24
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1976,17 +1976,24 @@ File: images/opt_prio.png Graphic file (type png)
 <use images/opt_prio.png>
 Package pdftex.def Info: images/opt_prio.png used on input line 218.
 (pdftex.def)             Requested size: 320.0935pt x 53.58289pt.
-) [19 <./images/opt_prio.png>] [20]
+
+<images/opt_dss.png, id=417, 914.41624pt x 375.4025pt>
+File: images/opt_dss.png Graphic file (type png)
+
+<use images/opt_dss.png>
+Package pdftex.def Info: images/opt_dss.png used on input line 234.
+(pdftex.def)             Requested size: 320.0935pt x 131.41002pt.
+ [19 <./images/opt_prio.png> <./images/opt_dss.png>])
+[20]
 \openout2 = `chap_mptcpsecurity.aux'.
 
-
-(./chap_mptcpsecurity.tex
+ (./chap_mptcpsecurity.tex
 Chapter 3.
 [21
 
 
 
-] [22] [23] <images/Attack1.png, id=442, 735.74875pt x 285.065pt>
+] [22] [23] <images/Attack1.png, id=445, 735.74875pt x 285.065pt>
 File: images/Attack1.png Graphic file (type png)
 
 <use images/Attack1.png>
@@ -2015,7 +2022,7 @@ File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
 
 
 ]
-<images/Network_Scenario.png, id=487, 785.93625pt x 253.94875pt>
+<images/Network_Scenario.png, id=490, 785.93625pt x 253.94875pt>
 File: images/Network_Scenario.png Graphic file (type png)
 
 <use images/Network_Scenario.png>
@@ -2083,10 +2090,10 @@ Package logreq Info: Writing requests to 'thesis.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 26043 strings out of 493304
- 464597 string characters out of 6139871
+ 26050 strings out of 493304
+ 464729 string characters out of 6139871
  654405 words of memory out of 5000000
- 28825 multiletter control sequences out of 15000+600000
+ 28830 multiletter control sequences out of 15000+600000
  73823 words of font info for 59 fonts, out of 8000000 for 9000
  957 hyphenation exceptions out of 8191
  48i,11n,49p,10444b,2419s stack positions out of 5000i,500n,10000p,200000b,80000s
@@ -2099,9 +2106,9 @@ mf/fonts/type1/public/lm/lmr12.pfb></usr/share/texmf/fonts/type1/public/lm/lmr1
 type1/public/lm/lmri10.pfb></usr/share/texmf/fonts/type1/public/lm/lmro9.pfb></
 usr/share/texmf/fonts/type1/public/lm/lmtk10.pfb></usr/share/texmf/fonts/type1/
 public/lm/lmtt10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtti10.pfb>
-Output written on thesis.pdf (44 pages, 1154389 bytes).
+Output written on thesis.pdf (44 pages, 1189439 bytes).
 PDF statistics:
- 665 PDF objects out of 1000 (max. 8388607)
- 165 named destinations out of 1000 (max. 500000)
- 498 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 668 PDF objects out of 1000 (max. 8388607)
+ 166 named destinations out of 1000 (max. 500000)
+ 503 words of extra memory for PDF output out of 10000 (max. 10000000)
 
