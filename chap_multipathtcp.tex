@@ -35,7 +35,7 @@ Other interesting fields in the header are: the \textit{Window} field, which all
 A component of the TCP header that is fundamental for MPTCP is the \textit{Options} field, which was firstly introduced as a free space for future additions to the protocol. In this specific case, the TLV solution is adopted to process the data inside the field. "TLV" stands for \textit{type-length-value}, where the type is the ID value uniquely identifying the option, the length is the number of bytes of the option, whereas the value represents the actual option content. This particular design allows to skip unknown options at the receiver by simply checking the length value and moving the pointer accordingly. An important limitation for this field is that its total length cannot be more than 40 bytes [ref].
 
 \section{MPTCP design}
-MPTCP \textit{functional goals} are to increase resilience of the connectivity and efficiency of the resource usage.
+MPTCP \textit{functional goals} are to increase resilience of the connectivity and efficiency of the resource usage by exploiting multiple paths (subflows) for the connection.
 Such goals can be found very similar in other multipathing solutions as the ones described in section [add section], but what is really unique about MPTCP protocol design is the set of its \textit{compatibilities goals} [\href{https://tools.ietf.org/html/rfc6182}{ref}]:
 
 \begin{itemize}
@@ -55,7 +55,7 @@ To achieve the required compatibility goals, changes had to be applied to layers
 \label{fig:stack}
 \end{figure}
 
-The choice of working at the transport layer was indeed the only available option. Within that option, the choice of maintaining TCP as the fundamental operating protocol for MPTCP was still straightforward for similar compatibility reasons; for this very purpose engineers decided to add all the required options for MPTCP inside the TCP \textit{Option} field in the TCP header. In this way, MPTCP-aware systems can process the MPTCP options for multipathing, but if a system that is not MPTCP-aware receives a MPTCP connection-request, it would simply discard the MPTCP options and threat such message as a plain TCP connection-request. 
+The choice of working at the transport layer was indeed the only available option. Within that option, the choice of maintaining TCP as the fundamental operating protocol for MPTCP was still straightforward for similar compatibility reasons; for this very purpose engineers decided to add all the required options for MPTCP inside the TCP \textit{Option} field in the TCP header. In this way, MPTCP-aware systems can process the MPTCP options for multipathing, but if a system that is not MPTCP-aware receives a MPTCP connection-request, it would simply discard the MPTCP options and treat such message as a plain TCP connection-request. 
 MPTCP design maintains the behavior of the subflows to be compliant with regular TCP, while reassembling of data incoming from different paths is a process executed by the receiving host only. MPTCP subflows are indeed seen by middleboxes as regular and independent TCP connections carrying additional options. If security policies at the middleboxes is not too restrictive against unknown options, MPTCP-unaware nodes would still work with the new protocol.
 For what regards applications, they don't need to be changed either since MPTCP would be inserted into the network stack at the operating system level: it would automatically split the data buffered from the application layer and send it through different subflows, according to the number of available endpoints at the connected hosts. Communication with the application layer can be performed through the old TCP APIs, even if MPTCP specific options can be used by upgraded user programs to take advantage of more advanced options in MPTCP.
 
@@ -77,11 +77,11 @@ The previous functions of MPTCP are implemented internally at each host and they
 \end{figure}
 
 \subsection{Control plane}
-The control plane for MPTCP takes into consideration all the options used in MPTCP to handle connection initiation, addition and removal of subflows, priority assignment to specific subflows, error handling via 'fallback' mechanism. These options are reported in the following subsections.
+The control plane for MPTCP takes into consideration all the options used in MPTCP to handle connection initiation, addition and removal of subflows, priority assignment to specific subflows, error handling via 'fallback' mechanism. These options are reported in the following subsections, adopting as reference documentation the \rfc{6824}.
 
 \subsubsection{MP\_CAPABLE}
-The connection initiation of an MPTCP connection is very similar to the standard TCP initial handshake, involving a SYN, SYN/ACK and ACK exchange on a single path between host A and host B. At the TCP level, with the exchange of such three packets both hosts have received an acknowledgment of the connection and they also have exchanged the two random sequence numbers that will be used for the two directions of the connection.
-In the MPTCP case, the SYN packet from host A will have a MP\_CAPABLE option in the \textit{Options} field of the TCP header; apart from that, the rest of the packet behaves exactly as in regular TCP: in fact, if the receiver host B is not MPTCP-compatible it will simply discard the MP\_CAPABLE option and instantiate a regular TCP connection.
+The connection initiation of an MPTCP connection is very similar to the standard TCP initial handshake, involving a SYN, SYN/ACK and ACK exchange on a single path between host A and host B. At a higher level, these three packets contains standard TCP segments, used to guarantee that both hosts have received an acknowledgment of the connection and also to exchange the two random sequence numbers that will be used for the two directions of the connection.
+At the MPTCP level, the SYN packet from host A will have a MP\_CAPABLE option in the \textit{Options} field of the TCP header; if the receiver host B is not MPTCP-compatible it will simply discard the MP\_CAPABLE option and proceeds instantiating a regular TCP connection.
 In case both hosts are MPTCP-compatible, the MP\_CAPABLE option is inserted in the three packets of the initial handshake for two purposes: advertise that both hosts are indeed MPTCP-compatible and allow them to exchange two 64-bit keys (Key-A and Key-B), according to the scheme in figure \ref{fig:mpcapable}.
 
 \begin{figure}[!htb]
@@ -91,7 +91,7 @@ In case both hosts are MPTCP-compatible, the MP\_CAPABLE option is inserted in t
 \label{fig:mpcapable}
 \end{figure}
 
-These keys are sent in clear inside the MP\_CAPABLE option only during the initial handshake and their purpose is to identify a specific MPTCP connection within a host (useful when associating a new subflow to an existing MPTCP connection for example) and to provide shared security material that is used in MPTCP for authorization mechanisms (more on this later in this section). The \textit{Option} field in the TCP header can only be 40 bytes long, and it is not reserved to MPTCP only. For this reason it is of primary importance to keep the amount of MPTCP related metadata as low as possible. In fact, the original 64 bit keys are exchanged only during initial handshake; subsequently, shorter 32 bit tokens (Token-A and Token-B) derived from such keys will be used to address a specific MPTCP connection, even if this procedure requires additional checks in case of collisions with other tokens already assigned to other MPTCP connections in the same machine. Therefore, an implementation will require a mapping from each token to the corresponding connection, and in turn to the keys for the connection.
+These keys are sent in clear inside the MP\_CAPABLE option only during the initial handshake and their purpose is to identify a specific MPTCP connection within a host (useful when associating a new subflow to an existing MPTCP connection, for example) and to provide shared security material that is used in MPTCP for authorization mechanisms (more on this later in this section). The \textit{Option} field in the TCP header can only be 40 bytes long, and it is not reserved to MPTCP only. For this reason it is of primary importance to keep the amount of MPTCP related metadata as low as possible. In fact, the original 64 bit keys are exchanged only during initial handshake; subsequently, shorter 32 bit tokens (Token-A and Token-B) derived from such keys will be used to address a specific MPTCP connection, even if this procedure requires additional checks in case of collisions with other tokens already assigned to other MPTCP connections in the same machine. Therefore, an implementation will require a mapping from each token to the corresponding connection, and in turn to the keys for the connection.
 
 
 Regarding the hashing algorithm used to produce the tokens, this can be negotiated by using a portion of the flag bits inside the MP\_CAPABLE option. In this paper, the SHA1 (and HMAC-SHA1 in case a key element is needed) is considered [ref to SHA1]. Note that the SHA1 algorithm produces a 160-bit / 20-octet resulting value, that is then truncated to its leftmost 32 or 64 bits according to the different cases in the MPTCP operations.
@@ -106,18 +106,18 @@ Regarding the hashing algorithm used to produce the tokens, this can be negotiat
 \subsubsection{MP\_JOIN}
 Suppose that after the first subflow is operational host A initiates a new subflow between one of its addresses and one of host B's addresses (figure \ref{fig:mptcpauth}). Host A sends a TCP SYN packet to host B containing the MP\_JOIN option, which includes Token-B (the token derived B's key) and a nonce value used to prevent replay attacks. An additional field in the MP\_JOIN option is called Address ID, an identifier for the original addresses in use within a single MPTCP connection; this additional value allows to refer to a specific subflow without the need to use the addresses as identifiers, which is very useful when middleboxes like NATs alter the IP header during the transit of the packets.
 
-At the lower layers of the network, the SYN packet sent in this way will look like a legitimate request from host A to initiate a new TCP connection with host B, being the SYN packet the first of the regular TCP initial handshake. Host B will treat such packet as a new MPTCP subflow request, and it will use the Token-B in the packet to associate the request to a specific ongoing MPTCP connection with host A.
+At the lower layers of the network, the SYN packet sent in this way looks like a legitimate request from host A to initiate a new TCP connection with host B, being the SYN packet the first of the regular TCP initial handshake. Host B treats such packet as a new MPTCP subflow request, and it uses the Token-B in the packet to associate the request to the specific ongoing MPTCP connection with host A.
 
 The handshake flow for MP\_JOIN includes HMAC values for authentication purposes, and it is structured as follow:
 \begin{itemize}
-  \item Token-B is added in the SYN packet from host A to host B in order to address a specific MPTCP connection;
+  \item Token-B is added in the SYN packet from host A to host B in order to address a specific MPTCP connection; a random nonce (R-A) is also sent along;
   \begin{figure}[!htb]
 \centering
 \includegraphics[width=0.75\textwidth]{images/opt_join1}
 \caption{MP\_JOIN option - SYN}
 \label{fig:opt_join1}
 \end{figure}
-  \item Host B processes the request and sends back a truncated HMAC value calculated by using as \textit{key} the concatenation of Key-B followed by Key-A, and as the \textit{message} the concatenation of the the nonce computed at host B (R-B) and the one received from host A (R-A). R-B is also added to the packet, since it is needed by host A in the next step;
+  \item Host B processes the request and sends back a truncated HMAC value calculated by using as \textit{key} the concatenation of Key-B followed by Key-A, and as the \textit{message} the concatenation of a new nonce computed at host B (R-B) and the one received from host A (R-A). R-B is also added to the packet, since it is needed by host A in the next step;
 \begin{figure}[!htb]
 \centering
 \includegraphics[width=0.75\textwidth]{images/opt_join2}
@@ -131,7 +131,7 @@ The handshake flow for MP\_JOIN includes HMAC values for authentication purposes
 \caption{MP\_JOIN option - ACK}
 \label{fig:opt_join3}
 \end{figure}
-  \item Note that the HMAC in the ACK packet from host A to host B has to be acknowledged for the subflow to be finally established. This because the third ACK is the only packet where the HMAC from host A is sent, and it has to be retransmitted is the fourth ACK from host B is not received.
+  \item Note that the HMAC in the ACK packet from host A to host B has to be acknowledged for the subflow to be finally established. This because the third ACK is the only packet where the HMAC from host A is sent, and it has to be acknowledged or retransmitted is the fourth ACK from host B is not received.
 \end{itemize}
 
 These HMAC values are used to authenticate the participants in the subflow establishment, since both have to know the keys for the MPTCP connection. If the creation of the new subflow is not possible because A sends an unknown Token-B to host B or the HMAC material exchanged is not recognized by either hosts or the SYN/ACK received at host A misses the MP\_JOIN option, then the operation is stopped sending a TCP RST.
@@ -148,14 +148,14 @@ If everything works properly, the entire procedure of instantiating a MPTCP conn
 
 
 \subsubsection{ADD\_ADDR}
-Even if a host can directly instantiate a new subflow using the MP\_JOIN option as previously described, another possibility is for the host to advertise an available address to the other machine, thus allowing the latter to instantiate the subflow via the MP\_JOIN option.
+Even if a host can directly instantiate a new subflow using the MP\_JOIN option as previously described, another possibility is for the host to advertise an available address to the other machine, thus allowing the latter to instantiate the subflow.
 This functionalities can be useful, for example, in a typical client-server Web configuration in which only the client is allowed to open new connections with the server: if a new interface becomes available at the server, it can dynamically advertise it to the client which in turns can send the SYN+MP\_JOIN packet for subflow initiation.
 
 
-This functionality is provided in MPTCP by the ADD\_ADDR option, that indeed contains the additional address (and, optionally, port) to be advertised. The option also include the previously mentioned Address ID value, that has to uniquely (within the same MPTCP connection) address the address to the sender.
+This functionality is provided in MPTCP by the ADD\_ADDR option, that indeed contains the additional address (and, optionally, port) to be advertised. The option also includes the previously mentioned Address ID value, that has to uniquely address the address to the sender (within the same MPTCP connection).
 
 
-The ADD\_ADDR option is treated as a soft component of the overall architecture, with no need to be sent reliably and/or be acknowledged by the receiver. The option can be added to any packet in the MPTCP connection if there is enough space in the Option part of the TCP header, with no guarantee that such option will be received or that the receiver will indeed use the advertised information to start a new subflow. This low priority assigned to ADD\_ADDR is reasonable since the malfunctioning of this option would not break the overall data transmission, but it might only cause a missed opportunity for better multipath exploitation. For similar reasons, there is no need to ensure a proper ordering for ADD\_ADDR and REMOVE\_ADDR at the receiver (REMOVE\_ADDR, explained in the following subsection, is similar to ADD\_ADDR but it indicates which subflow to shut down instead). Albeit the typical TCP validity test will be performed before inspecting the ADD\_ADDR option.
+The ADD\_ADDR option is treated as a soft component of the overall architecture, with no need to be sent reliably and/or be acknowledged by the receiver. The option can be added to any packet in the MPTCP connection if there is enough space in the \textit{Option} field of the TCP header, with no guarantee that such option will be received or that the receiver will indeed use the advertised information to start a new subflow. This low priority assigned to ADD\_ADDR is reasonable since the malfunctioning of this option would not break the overall data transmission, but it might only cause a missed opportunity for better multipath exploitation. For similar reasons, there is no need to ensure a proper ordering for ADD\_ADDR and REMOVE\_ADDR at the receiver (REMOVE\_ADDR, explained in the following subsection, is similar to ADD\_ADDR but it indicates which subflow to shut down instead). Albeit the typical TCP validity test will be performed before inspecting the ADD\_ADDR option.
 
 The content of the ADD\_ADDR option is shown in figure \ref{fig:addaddropt}. The IPVer indicates if the advertised address is of kind IPv4 or IPv6, while the other fields contain the Address ID, Address and optional port as previously stated.
 
@@ -169,7 +169,7 @@ The content of the ADD\_ADDR option is shown in figure \ref{fig:addaddropt}. The
 \subsubsection{REMOVE\_ADDR}
 If an address becomes unavailable during a MPTCP connection, the affected host should announce this so that any subflow currently using that address can be terminated. For security purposes, when a REMOVE\_ADDR is received, a test is performed to make sure that the address is not available anymore, by sending a TCP keepalive on the path.
 The Address ID is used to identify the path to be shut down, so that no explicit address is needed (and no address is indeed present in the REMOVE\_ADDR option), and the option would work through NATs as well. 
-A subflow that is working properly must not use this option close the connection, but a FIN exchange as in regular TCP is performed instead.
+A subflow that is working properly must not use this option to close the connection, but a FIN exchange similar to regular TCP is performed instead.
 
 \begin{figure}[!htb]
 \centering
@@ -210,7 +210,7 @@ Fallback can be required at any point during the connection if a middlebox modif
 \end{figure}
 
 \subsubsection{MP\_PRIO}
-It is possible to indicate if a path has to be used regularly or just as backup in case there no other available regular paths. This preference can be advertised at subflow creation via a flag in the MP\_JOIN option, but it is also possible to signal a priority change during the whole time of the MPTCP connection. In fact, it is enough to send the MP\_PRIO option to the subflow targeted to switch priority, to signal the other host about the change; it is also possible to add an Address ID to the option to target all the subflows using the addresses associated to such Address ID. This option is only sent from the receiver to the sender, even if the sender can discard such priority preference for any reasons. 
+It is possible to indicate if a path has to be used regularly or just as backup in case there no other available regular paths. This preference can be advertised at subflow creation via a flag in the MP\_JOIN option, but it is also possible to signal a priority change during the whole time of the MPTCP connection. In fact, it is enough to send the MP\_PRIO option to the targeted subflow to switch priority, to signal the other host about the change; it is also possible to add an Address ID to the option to target all the subflows using the addresses associated to such Address ID. This option is only sent from the receiver to the sender, even if the sender can discard such priority preference for any reasons. 
 
 
 \begin{figure}[!htb]
@@ -224,10 +224,10 @@ It is possible to indicate if a path has to be used regularly or just as backup 
 This part concerns all the MPTCP options used to manage the data flow in a MPTCP connection, including how the byte stream is subdivided into different subflow and how the original order of the packets is provided at the receiver.
 
 \subsubsection{DSS option}
-In order for the receiver to reassemble the correct data stream in MPTCP, there is a specific option called DSS that contains the data mapping and Data ACK. Data mapping is used to map the sequence space at each subflow (which is independently handled by the TCP protocol) and the overall sequence space at connection level. Data ACK is the procedure to acknowledge data receipt at connection level in MPTCP.
+In order for the receiver to reassemble the correct data stream in MPTCP, a specific option called DSS is used. This option contains the data mapping and Data ACK: data mapping is used to map the sequence space at each subflow (which is independently handled by the TCP protocol) to the overall sequence space at connection level; Data ACK is the procedure to acknowledge data receipt at connection level in MPTCP.
 The DSS option can also signal the equivalent of a TCP FIN for the overall MPTCP connection, meaning that the current mapping covers the final data from the sender. 
-This option might also include the checksum field to perform integrity checks on the payload.
-DSS is indeed a versatile packet, whose behavior is mainly defined by the appropriate flags (figure \ref{fig:opt_dss}). 
+This option might also include the checksum field to perform integrity checks on the payload (if this was enabled when instantiating the connection via the MP\_CAPABLE option).
+DSS is indeed a versatile packet, whose per-packet behavior is mainly defined by the appropriate flags (figure \ref{fig:opt_dss}). 
 
 \begin{figure}[!htb]
 \centering
@@ -236,6 +236,11 @@ DSS is indeed a versatile packet, whose behavior is mainly defined by the approp
 \label{fig:opt_dss}
 \end{figure}
 
+Regarding the data sequence mapping in MPTCP, the general idea is to maintain TCP-compliant and independent sequence numbers for the single subflows, while using a mapping functionality at the MPTCP-level, provided by the DSS option, to properly rearrange the data at the receiver at guarantee in-order and reliable overall transmission as in the case of legacy TCP. The alternative approach would have been to have a single MPTCP-level sequence number used for the entire set of subflows, meaning that a single subflow inspected by middleboxes at the network infrastructure would look like a TCP connection with holes in the payload delivery; this could trigger unwanted behaviors that would be against the compatibility goals towards the current networks.
+
+
+The DSS option achieves data sequence mapping with the combination of three fields: for a certain number of bytes (indicated in the \textit{Data-Level Length field}, and starting from the reported subflow sequence number (\textit{Subflow Sequence Number} field), the TCP-level sequence maps to the MPTCP-level sequence with starting value indicated in the \textit{Data sequence number} field.
+The \textit{Data ACK} field works as regular TCP ACK value, but it refers to the MPTCP-level acknowledgment of the received data. Note that subflow-level acknowledgement is still provided by regular TCP, but a second acknowledgement mechanism at connection-level is desired, since there might cases in which data that has been acknowledges at the subflow-level can be discarded in the buffers before reaching the application. By following the core principles of MPTCP, retransmission of packets can occur at different paths.
 
 \section{MPTCP deployment}
 After having explained all the technicalities about the protocol, it is now possible to talk about its deployment status and the problems encountered by pairing MPTCP with current infrastructures. This might seem a bit outside the scope of the thesis, but it is worth mentioning that the \textit{deployment status} and \textit{implementations} are a good indicator of how much MPTCP is important in the Internet community and they are good topics to motivate the thesis work. Also \textit{middleboxes compatibility} is indeed a fundamental part of the MPTCP security evaluation, being monitoring and detection equipment part of these middleboxes.

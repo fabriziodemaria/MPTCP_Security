@@ -31,34 +31,34 @@
 \contentsline {section}{\numberline {2.3}MPTCP deployment}{20}{section.2.3}
 \contentsline {subsection}{\numberline {2.3.1}Middleboxes compatibility}{20}{subsection.2.3.1}
 \contentsline {subsection}{\numberline {2.3.2}Implementations}{20}{subsection.2.3.2}
-\contentsline {subsection}{\numberline {2.3.3}Deployment status}{20}{subsection.2.3.3}
-\contentsline {chapter}{\numberline {3}MPTCP security}{21}{chapter.3}
-\contentsline {section}{\numberline {3.1}Threats analysis}{21}{section.3.1}
-\contentsline {subsection}{\numberline {3.1.1}Threats classifications}{22}{subsection.3.1.1}
-\contentsline {section}{\numberline {3.2}ADD\_ADDR attack}{23}{section.3.2}
-\contentsline {subsection}{\numberline {3.2.1}Concept}{23}{subsection.3.2.1}
-\contentsline {subsection}{\numberline {3.2.2}Procedure}{24}{subsection.3.2.2}
-\contentsline {subsection}{\numberline {3.2.3}Requirements}{25}{subsection.3.2.3}
-\contentsline {section}{\numberline {3.3}Additional threats}{26}{section.3.3}
-\contentsline {subsection}{\numberline {3.3.1}DoS attack on MP\_JOIN}{26}{subsection.3.3.1}
-\contentsline {subsection}{\numberline {3.3.2}Keys eavesdrop}{27}{subsection.3.3.2}
-\contentsline {subsection}{\numberline {3.3.3}SYN/ACK attack}{27}{subsection.3.3.3}
-\contentsline {chapter}{\numberline {4}ADD\_ADDR attack simulation}{28}{chapter.4}
-\contentsline {section}{\numberline {4.1}Environment setup}{28}{section.4.1}
-\contentsline {section}{\numberline {4.2}Attack script}{31}{section.4.2}
-\contentsline {section}{\numberline {4.3}Reproducing the attack}{32}{section.4.3}
-\contentsline {section}{\numberline {4.4}Conclusions}{33}{section.4.4}
-\contentsline {chapter}{\numberline {5}Fixing ADD\_ADDR}{35}{chapter.5}
-\contentsline {section}{\numberline {5.1}The ADD\_ADDR2 format}{35}{section.5.1}
-\contentsline {section}{\numberline {5.2}Implementing ADD\_ADDR2}{35}{section.5.2}
-\contentsline {subsection}{\numberline {5.2.1}Retro-compatibility}{35}{subsection.5.2.1}
-\contentsline {subsection}{\numberline {5.2.2}Port advertisement}{35}{subsection.5.2.2}
-\contentsline {subsection}{\numberline {5.2.3}IPv6 considerations}{36}{subsection.5.2.3}
-\contentsline {subsection}{\numberline {5.2.4}Crypto-API in MPTCP}{36}{subsection.5.2.4}
-\contentsline {section}{\numberline {5.3}Other contributions}{36}{section.5.3}
-\contentsline {section}{\numberline {5.4}Experimental evaluation}{36}{section.5.4}
-\contentsline {chapter}{\numberline {6}Conclusions}{37}{chapter.6}
-\contentsline {section}{\numberline {6.1}Related work}{37}{section.6.1}
-\contentsline {section}{\numberline {6.2}Future work}{37}{section.6.2}
-\contentsline {section}{\numberline {6.3}Final thoughts}{37}{section.6.3}
-\contentsline {chapter}{\numberline {A}An appendix}{38}{appendix.A}
+\contentsline {subsection}{\numberline {2.3.3}Deployment status}{21}{subsection.2.3.3}
+\contentsline {chapter}{\numberline {3}MPTCP security}{22}{chapter.3}
+\contentsline {section}{\numberline {3.1}Threats analysis}{22}{section.3.1}
+\contentsline {subsection}{\numberline {3.1.1}Threats classifications}{23}{subsection.3.1.1}
+\contentsline {section}{\numberline {3.2}ADD\_ADDR attack}{24}{section.3.2}
+\contentsline {subsection}{\numberline {3.2.1}Concept}{24}{subsection.3.2.1}
+\contentsline {subsection}{\numberline {3.2.2}Procedure}{25}{subsection.3.2.2}
+\contentsline {subsection}{\numberline {3.2.3}Requirements}{26}{subsection.3.2.3}
+\contentsline {section}{\numberline {3.3}Additional threats}{27}{section.3.3}
+\contentsline {subsection}{\numberline {3.3.1}DoS attack on MP\_JOIN}{27}{subsection.3.3.1}
+\contentsline {subsection}{\numberline {3.3.2}Keys eavesdrop}{28}{subsection.3.3.2}
+\contentsline {subsection}{\numberline {3.3.3}SYN/ACK attack}{28}{subsection.3.3.3}
+\contentsline {chapter}{\numberline {4}ADD\_ADDR attack simulation}{29}{chapter.4}
+\contentsline {section}{\numberline {4.1}Environment setup}{29}{section.4.1}
+\contentsline {section}{\numberline {4.2}Attack script}{32}{section.4.2}
+\contentsline {section}{\numberline {4.3}Reproducing the attack}{33}{section.4.3}
+\contentsline {section}{\numberline {4.4}Conclusions}{34}{section.4.4}
+\contentsline {chapter}{\numberline {5}Fixing ADD\_ADDR}{36}{chapter.5}
+\contentsline {section}{\numberline {5.1}The ADD\_ADDR2 format}{36}{section.5.1}
+\contentsline {section}{\numberline {5.2}Implementing ADD\_ADDR2}{36}{section.5.2}
+\contentsline {subsection}{\numberline {5.2.1}Retro-compatibility}{36}{subsection.5.2.1}
+\contentsline {subsection}{\numberline {5.2.2}Port advertisement}{36}{subsection.5.2.2}
+\contentsline {subsection}{\numberline {5.2.3}IPv6 considerations}{37}{subsection.5.2.3}
+\contentsline {subsection}{\numberline {5.2.4}Crypto-API in MPTCP}{37}{subsection.5.2.4}
+\contentsline {section}{\numberline {5.3}Other contributions}{37}{section.5.3}
+\contentsline {section}{\numberline {5.4}Experimental evaluation}{37}{section.5.4}
+\contentsline {chapter}{\numberline {6}Conclusions}{38}{chapter.6}
+\contentsline {section}{\numberline {6.1}Related work}{38}{section.6.1}
+\contentsline {section}{\numberline {6.2}Future work}{38}{section.6.2}
+\contentsline {section}{\numberline {6.3}Final thoughts}{38}{section.6.3}
+\contentsline {chapter}{\numberline {A}An appendix}{39}{appendix.A}
