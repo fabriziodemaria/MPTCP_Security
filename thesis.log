@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.10.5)  26 JAN 2016 11:05
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.10.5)  26 JAN 2016 13:38
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1786,7 +1786,7 @@ LaTeX Font Info:    Try loading font information for OT1+lmtt on input line 166
 (/usr/share/texmf/tex/latex/lm/ot1lmtt.fd
 File: ot1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-<images/logo.png, id=181, 246.6816pt x 72.27pt>
+<images/logo.png, id=197, 246.6816pt x 72.27pt>
 File: images/logo.png Graphic file (type png)
  <use images/logo.png>
 Package pdftex.def Info: images/logo.png used on input line 169.
@@ -1825,7 +1825,7 @@ l.224 \tableofcontents
 
  (./chap_introduction.tex
 Chapter 1.
-<images/internet_growth.png, id=260, 926.46124pt x 376.40625pt>
+<images/internet_growth.png, id=280, 926.46124pt x 376.40625pt>
 File: images/internet_growth.png Graphic file (type png)
 
 <use images/internet_growth.png>
@@ -1837,14 +1837,14 @@ Package pdftex.def Info: images/internet_growth.png used on input line 12.
 
 
  <./images/internet_growth.png>]
-<images/smartphones.png, id=270, 2674.99374pt x 1119.18124pt>
+<images/smartphones.png, id=290, 2674.99374pt x 1119.18124pt>
 File: images/smartphones.png Graphic file (type png)
 
 <use images/smartphones.png>
 Package pdftex.def Info: images/smartphones.png used on input line 31.
 (pdftex.def)             Requested size: 320.0935pt x 133.92024pt.
  [2]
-<images/pooling.png, id=279, 467.7475pt x 228.855pt>
+<images/pooling.png, id=299, 467.7475pt x 228.855pt>
 File: images/pooling.png Graphic file (type png)
  <use images/pooling.png>
 Package pdftex.def Info: images/pooling.png used on input line 47.
@@ -1854,7 +1854,7 @@ LaTeX Font Info:    Try loading font information for TS1+lmr on input line 55.
 (/usr/share/texmf/tex/latex/lm/ts1lmr.fd
 File: ts1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 ) [3 <./images/smartphones.png>]
-<images/OSI.png, id=288, 930.47626pt x 218.8175pt>
+<images/OSI.png, id=308, 930.47626pt x 218.8175pt>
 File: images/OSI.png Graphic file (type png)
  <use images/OSI.png>
 Package pdftex.def Info: images/OSI.png used on input line 66.
@@ -1870,121 +1870,132 @@ Chapter 2.
 
 
 
-] <images/tcp_header.png, id=319, 878.28125pt x 538.01pt>
+] <images/tcp_header.png, id=339, 878.28125pt x 538.01pt>
 File: images/tcp_header.png Graphic file (type png)
 
 <use images/tcp_header.png>
 Package pdftex.def Info: images/tcp_header.png used on input line 24.
 (pdftex.def)             Requested size: 320.0935pt x 196.08058pt.
  [10 <./images/tcp_header.png>]
-<images/stack.png, id=328, 831.105pt x 261.97874pt>
+<images/stack.png, id=348, 831.105pt x 261.97874pt>
 File: images/stack.png Graphic file (type png)
  <use images/stack.png>
-Package pdftex.def Info: images/stack.png used on input line 53.
+Package pdftex.def Info: images/stack.png used on input line 51.
 (pdftex.def)             Requested size: 320.0935pt x 100.9001pt.
 
-[11] <images/MPTCP_options.png, id=335, 1175.39125pt x 615.29875pt>
+[11] [12 <./images/stack.png>]
+<images/MPTCP_options.png, id=359, 1175.39125pt x 615.29875pt>
 File: images/MPTCP_options.png Graphic file (type png)
 
 <use images/MPTCP_options.png>
-Package pdftex.def Info: images/MPTCP_options.png used on input line 74.
+Package pdftex.def Info: images/MPTCP_options.png used on input line 72.
 (pdftex.def)             Requested size: 320.0935pt x 167.55995pt.
- [12 <./images/stack.png>]
-<images/mpcapable.png, id=342, 765.86125pt x 234.8775pt>
+
+<images/mpcapable.png, id=361, 765.86125pt x 234.8775pt>
 File: images/mpcapable.png Graphic file (type png)
 
 <use images/mpcapable.png>
-Package pdftex.def Info: images/mpcapable.png used on input line 89.
+Package pdftex.def Info: images/mpcapable.png used on input line 86.
 (pdftex.def)             Requested size: 320.0935pt x 98.16762pt.
- [13 <./images/MPTCP_options.png> <./images/mpcapable.png>] <images/opt_capable
-.png, id=350, 917.4275pt x 376.40625pt>
+ [13 <./images/MPTCP_options.png>]
+<images/opt_capable.png, id=370, 917.4275pt x 376.40625pt>
 File: images/opt_capable.png Graphic file (type png)
 
 <use images/opt_capable.png>
-Package pdftex.def Info: images/opt_capable.png used on input line 101.
+Package pdftex.def Info: images/opt_capable.png used on input line 98.
 (pdftex.def)             Requested size: 320.0935pt x 131.33063pt.
-
-<images/opt_join1.png, id=352, 922.44624pt x 259.97125pt>
+ [14 <./images/mpcapable.png> <./images/opt_capable.png>] <images/opt_join1.png
+, id=379, 922.44624pt x 259.97125pt>
 File: images/opt_join1.png Graphic file (type png)
 
 <use images/opt_join1.png>
-Package pdftex.def Info: images/opt_join1.png used on input line 116.
+Package pdftex.def Info: images/opt_join1.png used on input line 113.
 (pdftex.def)             Requested size: 320.0935pt x 90.20982pt.
 
-<images/opt_join2.png, id=353, 924.45375pt x 321.2pt>
+<images/opt_join2.png, id=380, 924.45375pt x 321.2pt>
 File: images/opt_join2.png Graphic file (type png)
 
 <use images/opt_join2.png>
-Package pdftex.def Info: images/opt_join2.png used on input line 123.
+Package pdftex.def Info: images/opt_join2.png used on input line 120.
 (pdftex.def)             Requested size: 320.0935pt x 111.216pt.
- [14 <./images/opt_capable.png>]
-<images/opt_join3.png, id=361, 921.4425pt x 315.1775pt>
+
+<images/opt_join3.png, id=381, 921.4425pt x 315.1775pt>
 File: images/opt_join3.png Graphic file (type png)
 
 <use images/opt_join3.png>
-Package pdftex.def Info: images/opt_join3.png used on input line 130.
+Package pdftex.def Info: images/opt_join3.png used on input line 127.
 (pdftex.def)             Requested size: 320.0935pt x 109.48659pt.
  [15 <./images/opt_join1.png> <./images/opt_join2.png> <./images/opt_join3.png>
 ]
 
-LaTeX Warning: Reference `fig:mptpcauth' on page 16 undefined on input line 140
+LaTeX Warning: Reference `fig:mptpcauth' on page 16 undefined on input line 137
 .
 
-<images/mptcpauth.png, id=369, 863.225pt x 732.7375pt>
+<images/mptcpauth.png, id=389, 863.225pt x 732.7375pt>
 File: images/mptcpauth.png Graphic file (type png)
 
 <use images/mptcpauth.png>
-Package pdftex.def Info: images/mptcpauth.png used on input line 144.
+Package pdftex.def Info: images/mptcpauth.png used on input line 141.
 (pdftex.def)             Requested size: 320.0935pt x 271.7012pt.
  [16 <./images/mptcpauth.png>]
-<images/addaddropt.png, id=376, 930.47626pt x 259.97125pt>
+<images/addaddropt.png, id=396, 930.47626pt x 259.97125pt>
 File: images/addaddropt.png Graphic file (type png)
 
 <use images/addaddropt.png>
-Package pdftex.def Info: images/addaddropt.png used on input line 164.
+Package pdftex.def Info: images/addaddropt.png used on input line 161.
 (pdftex.def)             Requested size: 320.0935pt x 89.43233pt.
 
-<images/opt_remove.png, id=377, 972.63374pt x 184.69pt>
+<images/opt_remove.png, id=397, 972.63374pt x 184.69pt>
 File: images/opt_remove.png Graphic file (type png)
 
 <use images/opt_remove.png>
-Package pdftex.def Info: images/opt_remove.png used on input line 176.
+Package pdftex.def Info: images/opt_remove.png used on input line 173.
 (pdftex.def)             Requested size: 320.0935pt x 60.7816pt.
  [17 <./images/addaddropt.png> <./images/opt_remove.png>] <images/opt_fastclose
-.png, id=386, 919.435pt x 251.94125pt>
+.png, id=406, 919.435pt x 251.94125pt>
 File: images/opt_fastclose.png Graphic file (type png)
 
 <use images/opt_fastclose.png>
-Package pdftex.def Info: images/opt_fastclose.png used on input line 190.
+Package pdftex.def Info: images/opt_fastclose.png used on input line 187.
 (pdftex.def)             Requested size: 320.0935pt x 87.71175pt.
 
-Overfull \hbox (2.93547pt too wide) in paragraph at lines 199--200
+Overfull \hbox (2.93547pt too wide) in paragraph at lines 196--197
 []\T1/lmr/m/n/10.95 As ex-plained in sec-tion [ref to sec-tion "Data plane"], d
 ata ac-knowl-edg-ment with MPTCP
  []
 
-<images/opt_fail.png, id=387, 914.41624pt x 257.96375pt>
+<images/opt_fail.png, id=407, 914.41624pt x 257.96375pt>
 File: images/opt_fail.png Graphic file (type png)
 
 <use images/opt_fail.png>
-Package pdftex.def Info: images/opt_fail.png used on input line 207.
+Package pdftex.def Info: images/opt_fail.png used on input line 204.
 (pdftex.def)             Requested size: 320.0935pt x 90.30046pt.
- [18 <./images/opt_fastclose.png> <./images/opt_fail.png>] <images/opt_prio.png
-, id=395, 917.4275pt x 153.57375pt>
+
+Underfull \vbox (badness 1127) has occurred while \output is active []
+
+ [18 <./images/opt_fastclose.png>] <images/opt_prio.png, id=414, 917.4275pt x 1
+53.57375pt>
 File: images/opt_prio.png Graphic file (type png)
 
 <use images/opt_prio.png>
-Package pdftex.def Info: images/opt_prio.png used on input line 218.
+Package pdftex.def Info: images/opt_prio.png used on input line 215.
 (pdftex.def)             Requested size: 320.0935pt x 53.58289pt.
 
-<images/opt_dss.png, id=397, 914.41624pt x 375.4025pt>
+<images/mptcp_fin.png, id=416, 791.95876pt x 187.70125pt>
+File: images/mptcp_fin.png Graphic file (type png)
+
+<use images/mptcp_fin.png>
+Package pdftex.def Info: images/mptcp_fin.png used on input line 229.
+(pdftex.def)             Requested size: 320.0935pt x 75.86679pt.
+ [19 <./images/opt_fail.png> <./images/opt_prio.png>] <images/opt_dss.png, id=4
+29, 914.41624pt x 375.4025pt>
 File: images/opt_dss.png Graphic file (type png)
 
 <use images/opt_dss.png>
-Package pdftex.def Info: images/opt_dss.png used on input line 234.
+Package pdftex.def Info: images/opt_dss.png used on input line 245.
 (pdftex.def)             Requested size: 320.0935pt x 131.41002pt.
- [19 <./images/opt_prio.png> <./images/opt_dss.png>])
-[20] [21]
+ [20 <./images/mptcp_fin.png> <./images/opt_dss.png>])
+[21]
 \openout2 = `chap_mptcpsecurity.aux'.
 
  (./chap_mptcpsecurity.tex
@@ -1993,7 +2004,7 @@ Chapter 3.
 
 
 
-] [23] [24] <images/Attack1.png, id=433, 735.74875pt x 285.065pt>
+] [23] [24] <images/Attack1.png, id=454, 735.74875pt x 285.065pt>
 File: images/Attack1.png Graphic file (type png)
 
 <use images/Attack1.png>
@@ -2022,7 +2033,7 @@ File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
 
 
 ]
-<images/Network_Scenario.png, id=478, 785.93625pt x 253.94875pt>
+<images/Network_Scenario.png, id=499, 785.93625pt x 253.94875pt>
 File: images/Network_Scenario.png Graphic file (type png)
 
 <use images/Network_Scenario.png>
@@ -2074,20 +2085,11 @@ Package atveryend Info: Empty hook `AfterLastShipout' on input line 258.
 (./chap_addaddr2.aux) (./chap_conclusions.aux) (./app_a.aux))
 Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 258.
 Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 258.
+Package rerunfilecheck Info: File `thesis.out' has not changed.
+(rerunfilecheck)             Checksum: 1E0289DCB0AC3E52AEA1383D9A888D55;3027.
 
-
-Package rerunfilecheck Warning: File `thesis.out' has changed.
-(rerunfilecheck)                Rerun to get outlines right
-(rerunfilecheck)                or use package `bookmark'.
-
-Package rerunfilecheck Info: Checksums for `thesis.out':
-(rerunfilecheck)             Before: 864C1D41E068AFEE122B04AA991CA207;2749
-(rerunfilecheck)             After:  1E0289DCB0AC3E52AEA1383D9A888D55;3027.
 
 LaTeX Warning: There were undefined references.
-
-
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
 
 
 Package biblatex Warning: Please (re)run BibTeX on the file(s):
@@ -2099,10 +2101,10 @@ Package logreq Info: Writing requests to 'thesis.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 26047 strings out of 493304
- 464669 string characters out of 6139871
+ 26058 strings out of 493304
+ 464880 string characters out of 6139871
  654405 words of memory out of 5000000
- 28826 multiletter control sequences out of 15000+600000
+ 28835 multiletter control sequences out of 15000+600000
  73823 words of font info for 59 fonts, out of 8000000 for 9000
  957 hyphenation exceptions out of 8191
  48i,11n,49p,10444b,2419s stack positions out of 5000i,500n,10000p,200000b,80000s
@@ -2115,9 +2117,9 @@ mf/fonts/type1/public/lm/lmr12.pfb></usr/share/texmf/fonts/type1/public/lm/lmr1
 type1/public/lm/lmri10.pfb></usr/share/texmf/fonts/type1/public/lm/lmro9.pfb></
 usr/share/texmf/fonts/type1/public/lm/lmtk10.pfb></usr/share/texmf/fonts/type1/
 public/lm/lmtt10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtti10.pfb>
-Output written on thesis.pdf (45 pages, 1189978 bytes).
+Output written on thesis.pdf (45 pages, 1204309 bytes).
 PDF statistics:
- 656 PDF objects out of 1000 (max. 8388607)
- 167 named destinations out of 1000 (max. 500000)
- 471 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 677 PDF objects out of 1000 (max. 8388607)
+ 168 named destinations out of 1000 (max. 500000)
+ 508 words of extra memory for PDF output out of 10000 (max. 10000000)
 

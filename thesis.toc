@@ -29,8 +29,8 @@
 \contentsline {subsection}{\numberline {2.2.2}Data plane}{19}{subsection.2.2.2}
 \contentsline {subsubsection}{DSS option}{19}{section*.29}
 \contentsline {section}{\numberline {2.3}MPTCP deployment}{20}{section.2.3}
-\contentsline {subsection}{\numberline {2.3.1}Middleboxes compatibility}{20}{subsection.2.3.1}
-\contentsline {subsection}{\numberline {2.3.2}Implementations}{20}{subsection.2.3.2}
+\contentsline {subsection}{\numberline {2.3.1}Middleboxes compatibility}{21}{subsection.2.3.1}
+\contentsline {subsection}{\numberline {2.3.2}Implementations}{21}{subsection.2.3.2}
 \contentsline {subsection}{\numberline {2.3.3}Deployment status}{21}{subsection.2.3.3}
 \contentsline {chapter}{\numberline {3}MPTCP security}{22}{chapter.3}
 \contentsline {section}{\numberline {3.1}Threats analysis}{22}{section.3.1}

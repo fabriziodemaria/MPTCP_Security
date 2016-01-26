@@ -29,9 +29,7 @@ As noted above, all these features are made possible by processing the bits at t
 There are 10 mandatory fields in the TCP header.
 The \textit{Source Port} and \textit{Destination Port}, together with the source and destination IP addresses provided in the upper IP header (not shown in figure \ref{fig:tcp_header}), are the means for identifying the two endpoints of the TCP connection. \textbf{These static fields clearly shows the single-path fundamental design of the protocol}. 
 TCP assures reliability standards independently from the lower layers used to route packets and transmit raw bits, and it is possible that packets arrive at destination unordered, or that some of them are lost on the way: \textit{Sequence Number}, \textit{Acknowledgment Number} and \textit{Data Offset} are three fields used in TCP for such cases; numbering each octet it is possible to put them in sequence and acknowledge them in a cumulative way, so that by acknowledging sequence number X means that all packets up to but not including X has been received. This system, together with timeouts, allows for retransmission of lost packets.
-Other interesting fields in the header are: the \textit{Window} field, which allows to achieve congestion control by telling to the sender the range of sequence numbers the data receiver is prepared to accept in a particular instance of time; the \textit{Checksum} field guarantees that data has not been modified on its way to the destination, intentionally or unintentionally (thus being part of the reliability aspect of the protocol).
-
-
+Other interesting fields in the header are: the \textit{Window} field, which allows to achieve congestion control by telling to the sender the range of sequence numbers the data receiver is prepared to accept in a particular instance of time; the \textit{Checksum} field guarantees that data has not been modified on its way to the destination, intentionally or unintentionally (thus being part of the reliability aspect of the protocol). There is also a set of single-bit flags, mainly used to indicate the kind of TCP segment (and which fields to consider for that TCP segment): for example, the FIN flag is used to handle the connection shut down upon data transfer termination while the RST flag can be used to trigger abrupt termination of the connection.
 A component of the TCP header that is fundamental for MPTCP is the \textit{Options} field, which was firstly introduced as a free space for future additions to the protocol. In this specific case, the TLV solution is adopted to process the data inside the field. "TLV" stands for \textit{type-length-value}, where the type is the ID value uniquely identifying the option, the length is the number of bytes of the option, whereas the value represents the actual option content. This particular design allows to skip unknown options at the receiver by simply checking the length value and moving the pointer accordingly. An important limitation for this field is that its total length cannot be more than 40 bytes [ref].
 
 \section{MPTCP design}
@@ -80,8 +78,7 @@ The previous functions of MPTCP are implemented internally at each host and they
 The control plane for MPTCP takes into consideration all the options used in MPTCP to handle connection initiation, addition and removal of subflows, priority assignment to specific subflows, error handling via 'fallback' mechanism. These options are reported in the following subsections, adopting as reference documentation the \rfc{6824}.
 
 \subsubsection{MP\_CAPABLE}
-The connection initiation of an MPTCP connection is very similar to the standard TCP initial handshake, involving a SYN, SYN/ACK and ACK exchange on a single path between host A and host B. At a higher level, these three packets contains standard TCP segments, used to guarantee that both hosts have received an acknowledgment of the connection and also to exchange the two random sequence numbers that will be used for the two directions of the connection.
-At the MPTCP level, the SYN packet from host A will have a MP\_CAPABLE option in the \textit{Options} field of the TCP header; if the receiver host B is not MPTCP-compatible it will simply discard the MP\_CAPABLE option and proceeds instantiating a regular TCP connection.
+The connection initiation of an MPTCP connection is very similar to the standard TCP initial three-way handshake, involving a SYN, SYN/ACK and ACK exchange on a single path between host A and host B. In a regular TCP connection establishment these three packets are used to guarantee that both hosts have received an acknowledgment of the connection and also to exchange the two random initial sequence numbers that will be used to acknowledge data delivery for the two directions of the connection. Despite working as regular TCP packets, if MPTCP is enabled the SYN packet from host A will have a MP\_CAPABLE option in the \textit{Options} field of the TCP header; if the receiver host B is not MPTCP-compatible it will simply discard the MP\_CAPABLE option and proceeds instantiating a regular TCP connection.
 In case both hosts are MPTCP-compatible, the MP\_CAPABLE option is inserted in the three packets of the initial handshake for two purposes: advertise that both hosts are indeed MPTCP-compatible and allow them to exchange two 64-bit keys (Key-A and Key-B), according to the scheme in figure \ref{fig:mpcapable}.
 
 \begin{figure}[!htb]
@@ -225,9 +222,23 @@ This part concerns all the MPTCP options used to manage the data flow in a MPTCP
 
 \subsubsection{DSS option}
 In order for the receiver to reassemble the correct data stream in MPTCP, a specific option called DSS is used. This option contains the data mapping and Data ACK: data mapping is used to map the sequence space at each subflow (which is independently handled by the TCP protocol) to the overall sequence space at connection level; Data ACK is the procedure to acknowledge data receipt at connection level in MPTCP.
-The DSS option can also signal the equivalent of a TCP FIN for the overall MPTCP connection, meaning that the current mapping covers the final data from the sender. 
+The DSS option can also signal the equivalent of a TCP FIN for the overall MPTCP connection, meaning that the current mapping covers the final data from the sender (figure \ref{fig:mptcp_fin}). 
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.75\textwidth]{images/mptcp_fin}
+\caption{Closing a MPTCP connection}
+\label{fig:mptcp_fin}
+\end{figure}
+
 This option might also include the checksum field to perform integrity checks on the payload (if this was enabled when instantiating the connection via the MP\_CAPABLE option).
 DSS is indeed a versatile packet, whose per-packet behavior is mainly defined by the appropriate flags (figure \ref{fig:opt_dss}). 
+
+Regarding the data sequence mapping in MPTCP, the general idea is to maintain TCP-compliant and independent sequence numbers for the single subflows, while using a mapping functionality at the MPTCP-level, provided by the DSS option, to properly rearrange the data at the receiver at guarantee in-order and reliable overall transmission as in the case of legacy TCP. The alternative approach would have been to have a single MPTCP-level sequence number used for the entire set of subflows, meaning that a single subflow inspected by middleboxes at the network infrastructure would look like a TCP connection with holes in the payload delivery; this could trigger unwanted behaviors that would be against the compatibility goals towards the current networks.
+
+
+The DSS option achieves data sequence mapping with the combination of three fields: for a certain number of bytes (indicated in the \textit{Data-Level Length field}, and starting from the reported subflow sequence number (\textit{Subflow Sequence Number} field), the TCP-level sequence maps to the MPTCP-level sequence with starting value indicated in the \textit{Data sequence number} field.
+The \textit{Data ACK} field works as regular TCP ACK value, but it refers to the MPTCP-level acknowledgment of the received data. Note that subflow-level acknowledgement is still provided by regular TCP, but a second acknowledgement mechanism at connection-level is desired, since there might cases in which data that has been acknowledges at the subflow-level can be discarded in the buffers before reaching the application. By following the core principles of MPTCP, retransmission of packets can occur at different paths.
 
 \begin{figure}[!htb]
 \centering
@@ -236,17 +247,18 @@ DSS is indeed a versatile packet, whose per-packet behavior is mainly defined by
 \label{fig:opt_dss}
 \end{figure}
 
-Regarding the data sequence mapping in MPTCP, the general idea is to maintain TCP-compliant and independent sequence numbers for the single subflows, while using a mapping functionality at the MPTCP-level, provided by the DSS option, to properly rearrange the data at the receiver at guarantee in-order and reliable overall transmission as in the case of legacy TCP. The alternative approach would have been to have a single MPTCP-level sequence number used for the entire set of subflows, meaning that a single subflow inspected by middleboxes at the network infrastructure would look like a TCP connection with holes in the payload delivery; this could trigger unwanted behaviors that would be against the compatibility goals towards the current networks.
-
-
-The DSS option achieves data sequence mapping with the combination of three fields: for a certain number of bytes (indicated in the \textit{Data-Level Length field}, and starting from the reported subflow sequence number (\textit{Subflow Sequence Number} field), the TCP-level sequence maps to the MPTCP-level sequence with starting value indicated in the \textit{Data sequence number} field.
-The \textit{Data ACK} field works as regular TCP ACK value, but it refers to the MPTCP-level acknowledgment of the received data. Note that subflow-level acknowledgement is still provided by regular TCP, but a second acknowledgement mechanism at connection-level is desired, since there might cases in which data that has been acknowledges at the subflow-level can be discarded in the buffers before reaching the application. By following the core principles of MPTCP, retransmission of packets can occur at different paths.
-
 \section{MPTCP deployment}
-After having explained all the technicalities about the protocol, it is now possible to talk about its deployment status and the problems encountered by pairing MPTCP with current infrastructures. This might seem a bit outside the scope of the thesis, but it is worth mentioning that the \textit{deployment status} and \textit{implementations} are a good indicator of how much MPTCP is important in the Internet community and they are good topics to motivate the thesis work. Also \textit{middleboxes compatibility} is indeed a fundamental part of the MPTCP security evaluation, being monitoring and detection equipment part of these middleboxes.
+Despite the big effort in designing a protocol compliant with strict compatibility requirements, assuring correct functioning in all the current network scenarios is not a viable possibility for MPTCP. The main problematics are related to unwanted behavior of middleboxes processing unknown MPTCP packets, but that is not the only aspect currently limiting the deployment status of the new protocol. MPTCP has to guarantee the same levels of reliability, performance and security of regular TCP (including the cases in which the fallback mechanism is adopted to switch to plain TCP). Moving further away from technical details, deployment of such a protocol would have a big impact on the business models currently available for Internet access provisioning, and it is very important to analyze the relation between costs and benefits that MPTCP would bring to each and every group of MPTCP stakeholders.
+
+
+The success of MPTCP strongly depends on its deployment, and its deployment strongly depends on endpoints. As previously mentioned, there is conceptually no need for technical modifications at the intermediate infrastructure to make MPTCP available at the end users, the latter being the ones directly accessing the biggest part of MPTCP benefits as described in section [add MPTCP benefits section]. Nevertheless, connectivity providers still represent an important part of the entire set of stakeholders that might benefit from MPTCP wide adoption: MPTCP can directly improve resource utilization and congestion bottlenecks within the overall infrastructure, but it can also be seen as an enabler of new business models for the ISPs, since end users might show an increase interest in multihoming solutions [\href{https://books.google.de/books?id=ECBxhiURlKYC&pg=PA23&lpg=PA23&dq=mptcp+deployment&source=bl&ots=_cvPxxdH6K&sig=P5AlF9bU_iE3C63HfXvgD77tUg8&hl=en&sa=X&ved=0ahUKEwi0wMnuscfKAhUB1hQKHT0cARsQ6AEIUzAI#v=onepage&q&f=false}{href}]. End users and ISPs feedback for MPTCP would drive the interest of infrastructure vendors to better support the protocol or not. 
+Yet another case study involves data infrastructure maintainers and the benefits that MPTCP can bring to data centers of today as well as the possibilities enabled by MPTCP for the design of the data centers of the future [\href{http://conferences.sigcomm.org/sigcomm/2011/papers/sigcomm/p266.pdf}{href}].
+
+
+The following sections disregard business motives of MPTCP adoption and focus on some core technical aspects of the protocol deployment, considering middleboxes compatibility, OS implementations status and finally an overview of the current rate of adoption and future trends.
 
 \subsection{Middleboxes compatibility}
-This section will be quite technical and it is supposed to list the most important middle-boxes and their impact/effect on a MPTCP connection. These boxes include NATs, proxies and firewalls. This part should clearly state why MPTCP widespread adoption is a big challenge.
+
 
 \subsection{Implementations}
 Despite the previously described problematics, MPTCP is a big bet in the IETF community and many implementations have been developed for the most common OSes, listed in this section (with some history notions).
