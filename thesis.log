@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.10.5)  26 JAN 2016 13:38
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.10.5)  26 JAN 2016 14:41
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1994,23 +1994,23 @@ File: images/opt_dss.png Graphic file (type png)
 <use images/opt_dss.png>
 Package pdftex.def Info: images/opt_dss.png used on input line 245.
 (pdftex.def)             Requested size: 320.0935pt x 131.41002pt.
- [20 <./images/mptcp_fin.png> <./images/opt_dss.png>])
-[21]
+ [20 <./images/mptcp_fin.png> <./images/opt_dss.png>]
+[21]) [22]
 \openout2 = `chap_mptcpsecurity.aux'.
 
  (./chap_mptcpsecurity.tex
 Chapter 3.
-[22
+[23
 
 
 
-] [23] [24] <images/Attack1.png, id=454, 735.74875pt x 285.065pt>
+] [24] [25] <images/Attack1.png, id=459, 735.74875pt x 285.065pt>
 File: images/Attack1.png Graphic file (type png)
 
 <use images/Attack1.png>
 Package pdftex.def Info: images/Attack1.png used on input line 79.
 (pdftex.def)             Requested size: 426.79135pt x 165.3639pt.
- [25 <./images/Attack1.png>] [26] [27]) [28]
+ [26 <./images/Attack1.png>] [27] [28]) [29]
 \openout2 = `chap_addaddrattackexecution.aux'.
 
 
@@ -2028,18 +2028,18 @@ LaTeX Font Info:    Try loading font information for T1+lmtt on input line 15.
 
 (/usr/share/texmf/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
-) [29
+) [30
 
 
 
 ]
-<images/Network_Scenario.png, id=499, 785.93625pt x 253.94875pt>
+<images/Network_Scenario.png, id=503, 785.93625pt x 253.94875pt>
 File: images/Network_Scenario.png Graphic file (type png)
 
 <use images/Network_Scenario.png>
 Package pdftex.def Info: images/Network_Scenario.png used on input line 46.
 (pdftex.def)             Requested size: 426.79135pt x 137.90526pt.
- [30 <./images/Network_Scenario.png>] [31]
+ [31 <./images/Network_Scenario.png>] [32]
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10.95> not available
 (Font)              Font shape `T1/lmtt/b/n' tried instead on input line 82.
 
@@ -2047,21 +2047,21 @@ Overfull \hbox (1.71516pt too wide) in paragraph at lines 83--84
 [][][][][][][][][][][][][][] 
  []
 
-[32] [33] [34]) [35]
+[33] [34] [35]) [36]
 \openout2 = `chap_addaddr2.aux'.
 
  (./chap_addaddr2.tex
 Chapter 5.
-[36
+[37
 
 
 
-]) [37]
+]) [38]
 \openout2 = `chap_conclusions.aux'.
 
  (./chap_conclusions.tex
 Chapter 6.
-) [38
+) [39
 
 
 
@@ -2070,7 +2070,7 @@ Chapter 6.
 
  (./app_a.tex
 Appendix A.
-) [39
+) [40
 
 
 
@@ -2101,8 +2101,8 @@ Package logreq Info: Writing requests to 'thesis.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 26058 strings out of 493304
- 464880 string characters out of 6139871
+ 26059 strings out of 493304
+ 464887 string characters out of 6139871
  654405 words of memory out of 5000000
  28835 multiletter control sequences out of 15000+600000
  73823 words of font info for 59 fonts, out of 8000000 for 9000
@@ -2117,9 +2117,9 @@ mf/fonts/type1/public/lm/lmr12.pfb></usr/share/texmf/fonts/type1/public/lm/lmr1
 type1/public/lm/lmri10.pfb></usr/share/texmf/fonts/type1/public/lm/lmro9.pfb></
 usr/share/texmf/fonts/type1/public/lm/lmtk10.pfb></usr/share/texmf/fonts/type1/
 public/lm/lmtt10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtti10.pfb>
-Output written on thesis.pdf (45 pages, 1204309 bytes).
+Output written on thesis.pdf (46 pages, 1206542 bytes).
 PDF statistics:
- 677 PDF objects out of 1000 (max. 8388607)
- 168 named destinations out of 1000 (max. 500000)
+ 682 PDF objects out of 1000 (max. 8388607)
+ 169 named destinations out of 1000 (max. 500000)
  508 words of extra memory for PDF output out of 10000 (max. 10000000)
 

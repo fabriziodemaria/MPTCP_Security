@@ -258,6 +258,15 @@ Yet another case study involves data infrastructure maintainers and the benefits
 The following sections disregard business motives of MPTCP adoption and focus on some core technical aspects of the protocol deployment, considering middleboxes compatibility, OS implementations status and finally an overview of the current rate of adoption and future trends.
 
 \subsection{Middleboxes compatibility}
+The Internet at its core was designed to provide end-to-end connectivity across an infrastructure of interconnected routers. Nevertheless, the growing rate of adoption and increasing complexity of the Internet brought up a wide set of new requirements inherent the intermediate stages of the communication rather then the end-hosts. Such requirements include the need to instantiate protection techniques against potential attacks, more flexibility in content delivery, caching for more efficient communication; they can even be more specific, like the need to rapidly overcome the previously mentioned IPv4 addresses depletion. Middleboxes are pieces of equipment that operate on the network traffic to meet these requirements. The most common middleboxes are NATs, proxies and firewalls, but nowadays there is a huge variety of deployed middleboxes that inevitably break the end-to-end principle of the Internet. Despite their usage is often required, they are more or less intrusive at different layers of operation (according to where they operate within the OSI architectural model), thus causing malfunctioning of many protocols, and MPTCP is no exception. Middleboxes can indeed inspect packets, re-route them, drop them, split them into multiple fragments, and even modify single fields in packets' headers as well as change their payload.
+
+
+A simple example can be a standard firewall that is not MPTCP-aware and its default policy is set to "Deny". In this case, all the traffic is blocked unless the set of custom rules configured in the firewall explicitly allows a specific typology of packets. In this case, specific rules for MPTCP must be added to support the new protocol, and this might cause a considerable effort for network maintainers. For example, it is often not straightforward to operate on legacy firewall configurations for big companies with many access points.
+
+
+Another very common middlebox 
+
+
 
 
 \subsection{Implementations}
