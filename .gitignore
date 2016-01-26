@@ -157,3 +157,12 @@ pythontex-files-*/
 
 # Latexian
 TSWLatexianTemp*
+
+# Custom
+*.icm
+*.xmpi
+*.sty
+*.cfg
+*.cls
+*.ps
+thesis-blx.bib
