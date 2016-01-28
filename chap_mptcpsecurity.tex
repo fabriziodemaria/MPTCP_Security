@@ -18,7 +18,6 @@ Hijacking attacks aim at taking total control of the MPTCP session, thus being c
 
 MPTCP security mechanism was designed with the primary goal of being at least as good as the one currently available for standard TCP [RFC6181]. The official MPTCP documentation and analysis reports don't cover common threats affecting both TCP and MPTCP, but only the vulnerabilities introduced by the new protocol alone. Nevertheless, it is of paramount importance that the various security mechanisms deployed as part of standard TCP, for example mitigation techniques for reset attacks, are still compatible with Multipath TCP.
 
-\vspace{5mm} %5mm vertical space
 Apart from the fundamental objective of keeping MPTCP at least as reliable and secure as TCP, official documents offer another set of requirements mainly related to securing subflow management in MPTCP [RFC6824bis]. These requirements are:
 \begin{itemize} 
 \item Provide a mechanism to confirm that the parties in a subflow handshake are the same as in the original connection setup.
