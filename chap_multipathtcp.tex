@@ -276,10 +276,19 @@ There are middleboxes that split segments on the Internet as required by the MTU
 MPTCP would work also in the more uncommon cases in which segment splitters copy the original TCP option in only one of the generated smaller segments. If the first data-segment does not contain an MPTCP option, fallback to regular TCP is performed (as explained in 'Firewalls' section), otherwise MPTCP would work seamlessly even under these circumstances [\href{http://conferences.sigcomm.org/co-next/2013/workshops/HotMiddlebox/program/p37.pdf}{href}].
 
 \subsubsection{Application-level gateways}
-There are middleboxes that operate at higher layer in OSI model, modifying the payload of the packets: adding and removing bytes can change the boundaries of the data-sequence mapping and MPTCP information about it would become inconsistent. The only way to cope with this case is to fallback to regular TCP. In order to that, MPTCP has to detect when the payload has been changed by middleboxes and that is the main reason for which the checksum field has been added inside the DSS option [ref to DSS section].
+There are middleboxes that operate at higher layer in OSI model, modifying the payload of the packets: adding and removing bytes can change the boundaries of the data-sequence mapping and MPTCP information about it would become inconsistent. The only way to cope with this case is to fallback to regular TCP. In order to that, MPTCP has to detect when the payload has been changed by middleboxes and that is the main reason for which the checksum field has been added inside the DSS option [ref to DSS section]. The checksum calculation is optional in MPTCP, but it is recommended for operations on the open Internet.
 
 
 \subsection{Implementations}
+MPTCP proves to be a major TCP extension, and in this regards its design required a lot of efforts and several interconnected research projects. The European Commision funded the work with the FP7 Trilogy project [\href{http://www.trilogy-project.org/}{href}], followed by CHANGE [\href{http://www.change-project.eu/}{href}] and Trilogy 2 [\href{http://trilogy2.it.uc3m.es/}{href}]. %Follow with last email
+
+According to the working group active on MPTCP, in July 2013 there were at least three major independent MPTCP implementations other than the Linux kernel implementation [\href{https://datatracker.ietf.org/doc/draft-eardley-mptcp-implementations-survey/?include_text=1}{href}], including a FreeBSD implementation from Swinburne University of Technology [\href{http://lists.freebsd.org/pipermail/freebsd-net/2013-March/034882.html}{href}] and a NetScalar Firmware implementation from Citrix Systems [\href{https://www.citrix.com/blogs/2013/05/28/maximize-mobile-user-experience-with-netscaler-multipath-tcp/}{href}].
+Moreover, recent versions of MPTCP kernel (from 0.89.5) are now compatible with Android (with some limitations), and many porting projects have been developed to test older versions of MPTCP on various Android devices [\href{https://multipath-tcp.org/pmwiki.php?n=Users.Android}{href}].
+As of June 2015, a Solaris implementation is reportedly under development by Oracle [\href{https://mailarchive.ietf.org/arch/msg/multipathtcp/ugMIu566McQMn8YCju-CTjW9beY}{href}].
+All these implementations follows the standard RFC documentation for MPTCP, and they have shown good interoperability capabilities while operating with the standard MPTCP-compatible Linux kernel, especially for what regards the core MPTCP signaling messages (secondary MPTCP features like ADD\_ADDR address advertisement are not always implemented [\href{https://datatracker.ietf.org/doc/draft-eardley-mptcp-implementations-survey/?include_text=1}{href}].
+
+
+
 
 
 
