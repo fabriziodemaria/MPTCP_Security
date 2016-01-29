@@ -72,7 +72,7 @@ A possible solution to this problem is to extend the MP\_JOIN option format to i
 
 \subsection{Keys eavesdrop}
 An attacker can obtain the keys exchanged at the beginning of the MPTCP session, exploiting the fact that those are sent in clear. This is in fact a partial-time on-path eavesdropper attack, whose success would enable a vast set of attacking scenarios, even if the attacker itself has moved away from the session after sniffing the aforementioned keys.
-The keys associated to an MPTCP session are sensitive pieces of information, used to identify a specific connection at the hosts and used as keying material for all the HMAC computations in the protocol. With such pieces of information an attacker can potentially execute a connection hijacking. This problem is encountered again when analyzing the ADD\_ADDR attack, Section \ref{theaddaddrattack}.
+The keys associated to an MPTCP session are sensitive pieces of information, used to identify a specific connection at the hosts and used as keying material for all the HMAC computations in the protocol. With such pieces of information an attacker can potentially execute a connection hijacking. This problem is encountered again when analyzing the ADD\_ADDR attack, Section \ref{theaddaddrattack} and a more in-depth analysis of the possible mitigation techniques for this attack is presented.
 
 The maximum length of the TCP Option field brings strong limitations for security implementations: for example, using certificates in TCP Options would be impossible. Moreover, strong cryptographic computation is also discouraged inside TCP for performance reasons. Nevertheless, many techniques can be used to prevent the keys' eavesdrop attack other than the more obvious possibility of adopting pre-shared keys. Such techniques are mentioned in \rfc{7430} and briefly explained in the following sections.
 
@@ -108,10 +108,12 @@ The main back draw of asking the application layer to provide the security mecha
 
 Despite being the message exchange almost unchanged under these circumstances, some synchronization concerns might arise due the fact that it's possible the client's application has already called the socket with the proper options while the server is still waiting for the key. In this case, silently dropping the SYN packets from the client, together with the usual TCP retransmission mechanism, should solve the problem.
 
+\subsubsection{Secure MPTCP}
+Secure MPTCP (SMTCP) refers to the integration of MPTCP with tcpcrypt, a protocol that attempts to encrypt almost the entire content of the traffic [\href{http://www.tcpcrypt.org/}{href}]
 
+\subsubsection{Other proposals}
 Use of Cryptographically Generated Addresses (CGAs) [];
-Use of tcpcrypt [];
-Use of DNSSEC [];
+Use of DNSSEC [].
 
 
 \subsection{SYN/ACK attack}
