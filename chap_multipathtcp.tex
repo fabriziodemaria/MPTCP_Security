@@ -150,12 +150,10 @@ If everything works properly, the entire procedure of instantiating a MPTCP conn
 
 \subsubsection{ADD\_ADDR}
 Even if a host can directly instantiate a new subflow using the MP\_JOIN option as previously described, another possibility is for the host to advertise an available address to the other machine, thus allowing the latter to instantiate the subflow.
-This functionalities can be useful, for example, in a typical client-server Web configuration in which only the client is allowed to open new connections with the server: if a new interface becomes available at the server, it can dynamically advertise it to the client which in turns can send the SYN+MP\_JOIN packet for subflow initiation.
+This functionalities can be useful, for example, in a typical client-server configuration in which only the client is allowed to open new connections with the server: if a new interface becomes available at the server, it can dynamically advertise it to the client which in turns can send the SYN+MP\_JOIN packet for subflow initiation.
 
 
-This functionality is provided in MPTCP by the ADD\_ADDR option, that indeed contains the additional address (and, optionally, port) to be advertised. The option also includes the previously mentioned Address ID value, that has to uniquely address the address to the sender (within the same MPTCP connection).
-
-
+This functionality is provided in MPTCP by the ADD\_ADDR option, that indeed contains the additional address (and, optionally, port) to be advertised. To cope with NATs, the option also includes the previously mentioned Address ID 8-bit integer, that has to be bounded to the new address used to create the subflow.
 The ADD\_ADDR option is treated as a soft component of the overall architecture, with no need to be sent reliably and/or be acknowledged by the receiver. The option can be added to any packet in the MPTCP connection if there is enough space in the \textit{Option} field of the TCP header, with no guarantee that such option will be received or that the receiver will indeed use the advertised information to start a new subflow. This low priority assigned to ADD\_ADDR is reasonable since the malfunctioning of this option would not break the overall data transmission, but it might only cause a missed opportunity for better multipath exploitation. For similar reasons, there is no need to ensure a proper ordering for ADD\_ADDR and REMOVE\_ADDR at the receiver (REMOVE\_ADDR, explained in the following subsection, is similar to ADD\_ADDR but it indicates which subflow to shut down instead). Albeit the typical TCP validity test will be performed before inspecting the ADD\_ADDR option.
 
 The content of the ADD\_ADDR option is shown in figure \ref{fig:addaddropt}. The IPVer indicates if the advertised address is of kind IPv4 or IPv6, while the other fields contain the Address ID, Address and optional port as previously stated.

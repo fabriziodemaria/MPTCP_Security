@@ -127,7 +127,16 @@ A possible solution to this problem is to extend the MP\_JOIN option format to i
 An attacker can obtain the keys exchanged at the beginning of the MPTCP session, exploiting the fact that those are sent in clear. This is in fact a partial-time on-path eavesdropper attack, whose success would enable a vast set of attacking scenarios, even if the attacker itself has moved away from the session after sniffing the aforementioned keys.
 The keys associated to an MPTCP session are sensitive pieces of information, used to identify a specific connection at the hosts and used as keying material for all the HMAC computations in the protocol. With such pieces of information an attacker can potentially execute a connection hijacking. This problem is encountered again when analyzing the ADD\_ADDR attack, Section \ref{theaddaddrattack}.
 
-Possible solutions have been proposed to protect the keys, but these are outside the scope of this paper.
+Many techniques can be used to prevent the keys' eavesdrop attack other than the more obvious possibility of adopting pre-shared keys; such techniques are mentioned in \rfc{7430} and briefly explained here:
+
+\begin{itemize}
+  \item Use of hash chains: [];
+  \item Use of SSL keys [];
+  \item Use of Cryptographically Generated Addresses (CGAs) [];
+  \item Use of tcpcrypt [];
+  \item Use of DNSSEC [];
+\end{itemize}
+
 
 \subsection{SYN/ACK attack}
 This is a partial-time on-path active attack. An attacker that can intercept and alter the MP\_JOIN packets is able to add any address it wants to the session. This is possible because there is no relation between the source addresses and the security material in the MP\_JOIN packets. But securing the source address in MP\_JOIN is not feasible if MPTCP is supposed to work through NATs: these middle-boxes operate exactly as described in this attack procedure. 
