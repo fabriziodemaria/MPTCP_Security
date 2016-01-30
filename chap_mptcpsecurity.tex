@@ -109,7 +109,7 @@ The main back draw of asking the application layer to provide the security mecha
 Despite being the message exchange almost unchanged under these circumstances, some synchronization concerns might arise due the fact that it's possible the client's application has already called the socket with the proper options while the server is still waiting for the key. In this case, silently dropping the SYN packets from the client, together with the usual TCP retransmission mechanism, should solve the problem.
 
 \subsubsection{Secure MPTCP}
-Secure MPTCP (SMTCP) refers to the integration of MPTCP with tcpcrypt, a protocol that attempts to encrypt almost the entire content of the traffic [\href{http://www.tcpcrypt.org/}{href}]
+Secure MPTCT[\href{https://tools.ietf.org/html/draft-bagnulo-mptcp-secure-00}{href}] (SMTCP) refers to the integration of MPTCP with tcpcrypt, the latter being a protocol that attempts to encrypt almost the entire content of the traffic [\href{http://www.tcpcrypt.org/}{href}]. SMTCP has been proposed as more secure version of MPTCP that would protect the data stream itself rather than addressing each and every security flaw in the signalling component of the protocol. Indeed, all the MPTCP signalling data would be encrypted and integrity protected as well, thus meaning that the overall protection for MPTCP would be achieved by the tcpcrypt extensions alone. An interesting factor of this solution, is that tcpcrypt also require sharing keying material to provide encryption, thus being tcpcrypt itself vulnerable to Man-in-the-Middle attacks during the initial key negotiation.
 
 \subsubsection{Other proposals}
 Use of Cryptographically Generated Addresses (CGAs) [];
