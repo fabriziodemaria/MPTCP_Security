@@ -19,10 +19,11 @@ Such format would require the attacker to know the key in order to forge a valid
 
 The keys' eavesdrop threat is a partial-time on-path eavesdrop, a category that is considered less critical in terms of security concerns. Such keys' eavesdrop procedure in MPTCP has an almost identical counterpart in SCTP, when the SCTP-AUTH extension is used without pre-shared keys [\rfc{5061}]. In these regards the same security levels of SCTP would be reached in MPTCP by upgrading ADD\_ADDR to ADD\_ADDR2. Since SCTP is Standard Track, ADD\_ADDR2 is indeed considered a sufficient modification of the MPTCP first design to reach the security levels required for the transition to Standard Track.
 
-
 \section{Implementing ADD\_ADDR2}
-An introductory section that shows the main architectural aspects of how MPTCP has been merged into the TCP code and the TCP modules inside the kernel.
-Here it starts the part with all the details about the implementation of ADD\_ADDR2 in the kernel, as part of the work developed during the stage. Code snippets have to be added here. The following subsections are the side issues and side features that have been elaborated during the thesis work.
+The current MPTCP patch added to the TCP stack in the Linux kernel currently counts around 12000 lines of code [\href{http://multipath-tcp.org/mptcp_stats/index.html}{href}]. The main architectural concepts are now explained, before introducing the modifications related to the new ADD\_ADDR2 format. 
+
+
+With MPTCP, three main layers are introduced to guarantee multipath management and retro-compatibility with regular TCP [\href{http://inl.info.ucl.ac.be/publications/multipath-tcp-theory-practice}{href}]. The first element is the \textit{master subsocket}, which provides the interface used by the applications to communicate with the TCP stack. The structure of the master subsocket follows the regular TCP standards, in order to maintain retro-compatibility towards the application layer: in fact this is the only element used by the kernel in case of regular TCP connectivity. 
 
 \subsection{Retro-compatibility}
 Version control mechanism was not present but it is needed to negotiate which format to use in a MPTCP session: ADD\_ADDR or ADD\_ADDR2.
