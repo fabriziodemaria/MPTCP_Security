@@ -58,6 +58,7 @@ The benefits include better resource utilization, better throughput and smoother
 \end{itemize}
 
 \subsection{Multipathing solutions}
+\label{mptcp_alternatives}
 MPTCP aims at achieving all the benefits mentioned in the previous paragraph by operating at the transport layer of the traditional Internet architecture (figure \ref{fig:OSI}).
 Before MPTCP, other proposals have been elaborated to achieve multipath benefits by introducing new technologies at the link layer, network layer and transport layer (the latter being the layer on which TCP operates). Even at the application layer developers can create custom frameworks on top of TCP to achieve benefits similar to those that would come by exploiting multipath natively at the lower layers. For example, most modern browsers open many TCP connection simultaneously to download the various elements of a Web Page to improve user experience. Another example could be Skype and similar VOIP services, which try to automatically reconnect hosts in case of problems with minimum impact on the user experience. Albeit all the solutions at the application layer are just clever workarounds on top of regular TCP and they fall only marginally in our discussion regarding multipath.
 
