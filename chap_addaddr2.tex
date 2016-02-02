@@ -6,7 +6,7 @@ There is an ongoing effort to move the current MPTCP specification \ref{6824} fr
 By analyzing the nature of the vulnerability, various proposals have been elaborated to modify the design of the ADD\_ADDR option [\rfc{7430}]. The conceptual flaw behind the option is that no secret material related to the ongoing MPTCP is included. The only security mechanism connected to such message is indeed the TCP-level sequence and acknowledge numbers, that an attacker has to know in order to inject such message into an ongoing session.
 A possible solution could be to add the receiver token of the connection as a field in the ADD\_ADDR option. Such token, exchanged only during connection establishment via the MP\_CAPABLE option, is supposed to be unknown to the attacker that in turns would not be able to forge a valid ADD\_ADDR message. This solution wouldn't be effective if the attacker is able to eavesdrop the keys during the initial handshake; keys' eavesdrop is indeed a security concern related to MPTCP [ref to section on Keys' Eavesdrop], and for this reason it is not advisable to add such information in clear inside the ADD\_ADDR option, since that would give more opportunities for eavesdropping.
 Another possibility would be to maintain the ADD\_ADDR format unchanged but to block the attack at a later stage. For example, if the destination address of the SYN packet is added as part of the message used to calculate the HMAC value, the attacker wouldn't be able to recompute the HMAC value after modifying the destination address. However, since addresses are not a stable piece of information in a network with NATs, using the destination address to calculate the HMAC might not work.
-In order to achieve higher security levels maintaining NAT compatibility, a third option has been proposed with positive feedback. The idea is to add to the ADD\_ADDR option a new field containing the truncated HMAC value (rightmost 64 bits) calculated as follow: the \textit{key} is the MPTCP key of the sender as originally agreed in the MP\_CAPABLE handshake; the \textit{message} is the concatenation of the previous three fields in packet: Address ID, advertised IP address, and Port. The new format (figure \ref{fig:addaddr2} has been formally specified for the first time in \rfc{6824bis-04}.
+In order to achieve higher security levels maintaining NAT compatibility, a third option has been proposed with positive feedback. The idea is to add to the ADD\_ADDR option a new field containing the truncated HMAC value (rightmost 64 bits) calculated as follow: the \textit{key} is the MPTCP key of the sender as originally agreed in the MP\_CAPABLE handshake; the \textit{message} is the concatenation of the previous three fields in packet: Address ID, advertised IP address, and Port. The new format (figure \ref{fig:addaddr2}) has been formally specified for the first time in \rfc{6824bis-04}, but a slight modification will be introduced in \rfc{6824bis-05}, as explained in the following sections.
 
 \begin{figure}[!htb]
 \centering
@@ -20,7 +20,7 @@ Such format would require the attacker to know the key in order to forge a valid
 The keys' eavesdrop threat is a partial-time on-path eavesdrop, a category that is considered less critical in terms of security concerns. Such keys' eavesdrop procedure in MPTCP has an almost identical counterpart in SCTP, when the SCTP-AUTH extension is used without pre-shared keys [\rfc{5061}]. In these regards the same security levels of SCTP would be reached in MPTCP by upgrading ADD\_ADDR to ADD\_ADDR2. Since SCTP is Standard Track, ADD\_ADDR2 is indeed considered a sufficient modification of the MPTCP first design to reach the security levels required for the transition to Standard Track.
 
 \section{Implementing ADD\_ADDR2}
-The current MPTCP patch added to the TCP stack in the Linux kernel currently counts around 12000 lines of code [\href{http://multipath-tcp.org/mptcp_stats/index.html}{href}]. It is considered the reference implementation for MPTCP and it closely follows RFC standards and set of features. Moreover, a lot of effort has been put into the implementation design in order to make the new protocol acceptable for upstream to the official Linux kernel. For such purpose, it is of paramount importance to keep the added complexity into the TCP stack as low as possible, in order not to jeopardize performance and stability of regular TCP. Nevertheless, high performance is expected for MPTCP. The main architectural concepts related to the control plane of the protocol are now explained, before introducing the modifications related to the new ADD\_ADDR2 format. 
+The current MPTCP patch added to the TCP stack in the Linux kernel currently counts around 12000 lines of code [\href{http://multipath-tcp.org/mptcp_stats/index.html}{href}]. It is considered the reference implementation for MPTCP and it closely follows RFC standards and set of features. Moreover, a lot of effort has been put into the implementation design in order to make the new protocol acceptable for upstream to the official Linux kernel. For such purpose, it is of paramount importance to keep the added complexity into the TCP stack as low as possible, in order not to jeopardize performance and stability of regular TCP. Nevertheless, high performance is expected for MPTCP. The main architectural concepts related to the control plane of the protocol are now explained, before introducing the modifications related to the new ADD\_ADDR2 format as defined in \rfc{6824bis-04}. 
 
 \subsection{MPTCP in Linux}
 With MPTCP in the Linux kernel, three main layers are introduced to guarantee multipath management and retro-compatibility with regular TCP [\href{http://inl.info.ucl.ac.be/publications/multipath-tcp-theory-practice}{href}]. The first element is the \textit{master subsocket}, which provides the interface used by the applications to communicate with the TCP stack. The structure of the master subsocket follows the regular TCP standards, in order to maintain retro-compatibility towards the application layer: in fact this is the only element used by the kernel in case of regular TCP connectivity. The second element is called \textit{multi-path control block (mpcb)} and it is the main brain of MPTCP, handling MPTCP-specific functionalities: the mpcb runs the algorithms that determine when to start or stop subflows, which subflow to chose in order to send a particular piece of data over the network and how to reconstruct the original data from the scattered segments coming from different subflows at the receiver. all the reordering algorithms in the mpcb work at the data-level, while the reordering of the data at the single subflows is handled by the underlying regular TCP. The final element of the MPTCP architecture is the set of \textit{slave subsockets}, the actual endpoints for the multiple MPTCP subflows. Such elements are not visible by the application, but they are handled by the mpcb. 
@@ -52,16 +52,129 @@ At the server, the status of the connection is not fully operational until the f
 With the Linux kernel implementation of MPTCP, only the client is allowed to start the establishment of new subflows. There are two main reasons for this: if both client and server start a subflow at the same time, it can be that multiple path are established between the same pair of IP addresses, which can cause problems in some cases. Moreover, clients are often operating behind a NAT, which don't allow server to start new TCP sessions and consequently, they wouldn't allow the server to start a new subflow with the client.
 
 After the connection has been established, multiple subflows can be used with MPTCP and there is a modular path-manager interface to allow flexibility in the heuristic adopted to decide which interfaces can be used and in which manner. In creating a new subflow, the client has to add the MP\_JOIN option inside the SYN packet and, differently from the MP\_CAPABLE scenario, the MPTCP-related structures like \textit{mptcp\_tcp\_sock} are created early on. At this point, failure wouldn't cause fallback to regular TCP and there is no need to risk memory allocation failures upon reception of the SYN/ACK from the server. Even if the subflows in MPTCP resemble regular TCP connections, the initial handshake differs in a way that it now requires four steps to reach fully operational status. The reason for this is that the third ACK now contains the HMAC value calculated by the client that has to be verified and acknowledged by the server before any data can be transmitted on such subflow. 
-Regarding the operational flow in the stack upon reception of a SYN packet, there is no early inspection aimed at determining if an MP\_JOIN option is present: that would causes performance degradation in case of regular TCP SYN packets. Instead, the packet is processed with regular TCP stack until, in case of matching with a listening socket, the function \textit{tcp\_v4\_conn\_request()} is called: here the TCP options are scanned, and if MP\_JOIN is present then redirection to MPTCP happens, and the lookup in the hashtable is performed to determine which MPTCP connection the new SYN packet is addressing to. As a new addition required by MPTCP, if there is no matching socket found for the incoming packet, MPTCP still checks if the SYN message contains the MP\_JOIN option via the \textit{mptcp\_lookup\_join}. At this point, the server creates a request socket that is saved into the hashtable so that it can be retrieved when the client answers with the ACK message during the last stage of the subflow handshake.
+Regarding the operational flow in the stack upon reception of a SYN packet, there is no early inspection aimed at determining if an MP\_JOIN option is present: that would causes performance degradation in case of regular TCP SYN packets. Instead, the packet is processed with regular TCP stack until, in case of matching with a listening socket, the function \textit{tcp\_v4\_conn\_request()} is called: here the TCP options are scanned, and if MP\_JOIN is present then redirection to MPTCP happens, and the lookup in the hashtable is performed to determine which MPTCP connection the new SYN packet is addressing to. As a new addition required by MPTCP, if there is no matching socket found for the incoming packet, MPTCP still checks if the SYN message contains the MP\_JOIN option via the \textit{mptcp\_lookup\_join()}. At this point, the server creates a request socket that is saved into the hashtable so that it can be retrieved when the client answers with the ACK message during the last stage of the subflow handshake.
 
 This section presented an overview of the most important data structures and functions used in MPTCP to handle connection establishment and subflow management. The following sections will deal with the ADD\_ADDR functionality in the Linux kernel and how this was modified to implement the new format ADD\_ADDR2.
 
+\subsection{Truncated HMAC in ADD\_ADDR}
+The part of code in the Linux kernel defining the format of every MPTCP options is contained in \textit{include/net/mptcp.h}. For each MPTCP option there is a corresponding structure in this header file that contains all the fields for the option in the right order and with the right format. The ADD\_ADDR option is defined in the \textit{mp\_add\_addr} struct. A first step towards achieving a full implementation of ADD\_ADDR2 is indeed to add the truncated HMAC field to the ADD\_ADDR message and place it after the optional port, both in case of IPv4 and IPv6 (listing \ref{mpaddaddr}, lines 18 and 23).
+
+\begin{lstlisting}[language=c, caption=\textit{mp\_add\_addr struct in the kernel}, label=mpaddaddr]
+struct mp_add_addr {
+	__u8	kind;
+	__u8	len;
+#if defined(__LITTLE_ENDIAN_BITFIELD)
+	__u8	ipver:4,
+		sub:4;
+#elif defined(__BIG_ENDIAN_BITFIELD)
+	__u8	sub:4,
+		ipver:4;
+#else
+#error	"Adjust your <asm/byteorder.h> defines"
+#endif
+	__u8	addr_id;
+	union {
+		struct {
+			struct in_addr	addr;
+			__be16		port;
+			__u8		mac[8];
+		} v4;
+		struct {
+			struct in6_addr	addr;
+			__be16		port;
+			__u8		mac[8];
+		} v6;
+	} u;
+} __attribute__((__packed__));
+\end{lstlisting}
+
+The fields in the data structure indeed resemble the content of ADD\_ADDR as exposed from a high level prospective in section [add section]. 
+A \textit{union} is used to define two alternatives for the option's definition, since the advertised IP address can be a longer IPv6 address or a shorter IPv4 address. 
+The HMAC value that is computed using the SHA-1 algorithm is of 160 bits, but only its rightmost 64 bits are parsed into the final packet, as can be noticed by the usage of an array of eight elements of kind \_\_u8.  
+Particular attention is used to correctly pack the structure, in order to avoid additional padding that could be added by the compiler to align the inner fields for performance reasons. Such padding is unwanted in the final packet sent on wire. The \textit{port} field is optional, meaning that additional care has to be taken when parsing the struct in order to build the packet, as it is explained later in this section.
+
+
+When the transmission of an ADD\_ADDR2 is triggered, there is a specific function called \textit{full\_mesh\_addr\_signal()} in \textit{net/mptcp/mptcp\_fullmesh.c} that is called to prepare all the fields that will be later on parsed into the outgoing packet. At this point, the fields are saved in a \textit{tcp\_out\_options} structure, defined in \textit{include/linux/tcp.h}. A new \textit{\_\_u64 trunc\_mac} entry has been added to such structure in order to store the new truncated HMAC used in ADD\_ADDR2. 
+It is now important to mention that the ADD\_ADDR2 has been designed as a major update for MPTCP, thus being part of the next version bump (MPTCP version 1). Retro-compatibility with version 0 and ADD\_ADDR has to be guaranteed, meaning that the truncated HMAC is added into the ADD\_ADDR message only if version 1 has been established by both hosts during the initial handshake. More about the newly introduced version control is reported in the next section (section [\ref{retrocomp}]).
+
+\begin{lstlisting}[language=c, caption=\textit{New ADD\_ADDR HMAC calculation (outgoing packet)}, label=fullmesh]
+ if (mpcb->mptcp_ver >= MPTCP_VERSION_1) {
+ u8 mptcp_hash_mac[20];
+ u8 no_key[8];
+
+ *(u64 *)no_key = 0;
+ mptcp_hmac_sha1((u8 *)&mpcb->mptcp_loc_key,
+ 		(u8 *)no_key,
+		(u32 *)mptcp_hash_mac, 2,
+		1, (u8 *)&mptcp_local->locaddr4[ind].loc4_id,
+		4, (u8 *)&opts->add_addr4.addr.s_addr);
+ opts->add_addr4.trunc_mac = *(u64 *)mptcp_hash_mac;
+ }
+\end{lstlisting}
+
+In listing \ref{fullmesh} is reported the added code inside \textit{net/mptcp/mptcp\_fullmesh.c} that is used to calculate the HMAC value as previously described. It is possible to notice the "if" statement checking that the MPTCP version in use is indeed 1 or greater. The actual hashing function adopted is \textit{mptcp\_hmac\_sha1}; such function has been also modified to accept as arguments an arbitrary number of messages of arbitrary size (more details about this updated function are reported in section \ref{newhash}). 
+
+
+Regarding the key used for the HMAC calculation, that is defined as the concatenation of the first two arguments of the hashing function. It corresponds to the key of the sender as defined during the MP\_CAPABLE exchange, followed by 8 bytes initialized to 0 (the \textit{no\_key} field). Even if the 8 trailing bytes are not following the specifications in \rfc{6824bis-04}, these are maintained in order not to change the way the hashing function currently manages the keys for the HMAC computation: \textit{mptcp\_hmac\_sha1} accepts exactly two messages of 8 bytes each and concatenates them to form the final hashing key. This behavior is accepted since it reasonable to assume that in MPTCP the key for any HMAC calculation will always be the concatenation of the two 64-bit keys exchanged via the MP\_CAPABLE option during the initial handshake. This is not the case in the specifications of \rfc{6824bis-04}, but there is no good reason to only use the sender's key at this point. In fact, when an ADD\_ADDR is issued the connection is already up and running, meaning that both hosts know both keys, and concatenating them for the HMAC hashing key improves security overall (an attacker has to know both keys to forge valid HMAC values). These reasonings have been pointed out in the official IETF mailing-list and they have been positively reviewed [\href{https://mailarchive.ietf.org/arch/search/?email_list=multipathtcp&q=RFC6824bis-04+ADD_ADDR2+comments}{href}]: \rfc{6824bis-05}, released in January 2016, modifies the specifications for ADD\_ADDR2 so that both keys are used. For this reason it is acceptable to keep the \textit{no\_key} value in the code as a temporary (incorrect) implementation of \rfc{6824bis-04} standards, since it will be soon replaced with the key of the receiver. 
+
+The HMAC calculation produces 160 bits that are saved in the placeholder called \textit{mptcp\_hash\_mac}, whose pointer is later saved into the previously mentioned new field in \textit{tcp\_out\_options} (line 11 in \ref{fullmesh}).
+Later on, in the file \textit{net/mptcp/mptcp\_output.c} the \textit{mp\_add\_addr} is finally constructed by using the elements in the \textit{tcp\_out\_options} data structure, named \textit{opts} in listing \ref{mpoutput}.
+
+\begin{lstlisting}[language=c, caption=\textit{Building ADD\_ADDR2 output message}, label=mpoutput]
+ mpadd->kind = TCPOPT_MPTCP;
+ if (opts->add_addr_v4) {
+ 	mpadd->sub = MPTCP_SUB_ADD_ADDR;
+ 	mpadd->ipver = 4;
+ 	mpadd->addr_id = opts->add_addr4.addr_id;
+ 	mpadd->u.v4.addr = opts->add_addr4.addr;
+ 	if (mpcb->mptcp_ver < MPTCP_VERSION_1) {
+ 		mpadd->len = MPTCP_SUB_LEN_ADD_ADDR4;
+ 		ptr += MPTCP_SUB_LEN_ADD_ADDR4_ALIGN >> 2;
+ 	} else {
+ 		memcpy((char *)mpadd->u.v4.mac - 2,
+ 		       (char *)&opts->add_addr4.trunc_mac, 8);
+ 		mpadd->len = MPTCP_SUB_LEN_ADD_ADDR4_VER1;
+ 		ptr += MPTCP_SUB_LEN_ADD_ADDR4_ALIGN_VER1 >> 2;
+ 	}
+ }
+\end{lstlisting}
+
+The MPTCP version in use is again checked to determine if to add the HMAC field or not. If the version is 1 or greater, then a \textit{memcpy} of the first 8 bytes of the HMAC value is performed to the location \textit{(char *)mpadd->u.v4.mac - 2}; the -2 is used to start the copying right after the advertised address (IPv4 in this case), thus skipping the optional port field. It is important to mention that the actual implementation of MPTCP for the Linux kernel lacks the feature about port advertisement: more precisely, a port is never added to the ADD\_ADDR option, even if the code to handle a possible port value upon ADD\_ADDR reception is in place and fully operative. Further considerations on port advertisement capabilities can be found in section \ref{portad}. The new ADD\_ADDR2 has different lengths with respect to the previous version, since the 8 bytes truncated HMAC is added. New "len" values are defined, by adding "\_VER1" to the name of the previous definitions: \textit{MPTCP\_SUB\_LEN\_ADD\_ADDR4\_VER1} is 16 (8 in ADD\_ADDR), and \textit{MPTCP\_SUB\_LEN\_ADD\_ADDR6\_VER1} is 28 (20 in ADD\_ADDR). All the code reported so far addresses the IPv4 advertisement, but IPv6 support is provided throughout the entire set of produced patches.
+
+
+At the receiver side, the ADD\_ADDR2 option is parsed, the HMAC value is calculated (using as HMAC key the MPTCP key of the sender) and a \textit{memcpy} function is used to check that the values coincide. If they do not coincide, the message is simply discarded. Such operations are performed in the function \textit{mptcp\_handle\_add\_addr()} in \textit{net/mptcp/mptcp\_input.c}. Such function is called only if the length of the received option corresponds to the expected values, according to the type of message (ADD\_ADDR or ADD\_ADDR2). This check is performed in another function within the same file, called \textit{mptcp\_parse\_options} (listing \ref{badsize}).
+
+\begin{lstlisting}[language=c, caption=\textit{Check ADD\_ADDR size at the receiver, inside \textit{mptcp\_parse\_option()}}, label=badsize]
+	if (!is_valid_addropt_opsize(tp->mpcb->mptcp_ver,
+				     mpadd, opsize)) {
+ 		mptcp_debug("%s: mp_add_addr: bad option size %d\n",
+ 			    __func__, opsize);
+ 		break;
+\end{lstlisting}
+
+An issue encountered at this point of development was that the function just mentioned was initially called with no reference to the \textit{mpcb} structure where the version of the current MPTCP session is stored. The MPTCP version is no more passed along in the options following the MP\_CAPABLE exchange, meaning that the value can't be retrieved directly from parsing the ADD\_ADDR option. A first workaround was to add the version value in the structure containing the received options, named \textit{mptcp\_options\_received}, before passing the structure to the actual parsing function. Anyway, this might be confusing to the developers, since it looks like the MPTCP version value has been indeed received within the options inside the TCP segment, while it was in reality saved at connection initialization. The final approach to solve the problem involved a slightly more complex changes in the set of function calls related to the parsing of TCP/MPTCP options: as it can be seen in the first line of listing \ref{badsize}, the \textit{tcp\_sock} (\textit{tp}) structure containing the \textit{mpcb} data for the connection is available inside \textit{mptcp\_parse\_option()}, and it can be passed along to the checking function \textit{is\_valid\_addropt\_opsize()}. This required to modify the \textit{tcp\_parse\_options()} function in the TCP stack to pass along the pointer to the \textit{tcp\_sock}, so that it can be retrieved further down within the function calls chain (listing \ref{tcpparse}, last line).
+
+\begin{lstlisting}[language=c, caption=\textit{New definition for \textit{tcp\_parse\_options}}, label=tcpparse]
+void tcp_parse_options(const struct sk_buff *skb,
+ 		       struct tcp_options_received *opt_rx,
+ 		       struct mptcp_options_received *mopt_rx,
+		       int estab, struct tcp_fastopen_cookie *foc);
+		       int estab, struct tcp_fastopen_cookie *foc,
+		       struct tcp_sock *tp);
+\end{lstlisting}
+
+Regarding the \textit{is\_valid\_addropt\_opsize()} function, it has been developed as a separate inline function called inside the "if" statement" for better readability, since the length's check with the additional ADD\_ADDR2 case involves now four possible configurations; the entire function content can be found in the appendix [add appendix reference where the patch is].
 
 
 \subsection{Retro-compatibility}
+\label{retrocomp}
 Version control mechanism was not present but it is needed to negotiate which format to use in a MPTCP session: ADD\_ADDR or ADD\_ADDR2.
 
+\subsection{Extending the hashing function}
+\label{newhash}
+
 \subsection{Port advertisement}
+\label{portad}
 Port advertisement in ADD\_ADDR is possible according to RFC specifications but it was not part of the implementation at the beginning of the thesis work, so it has been added.
 
 \subsection{IPv6 considerations}
