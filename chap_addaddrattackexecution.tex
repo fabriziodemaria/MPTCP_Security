@@ -111,19 +111,19 @@ This procedure has been tested on a Ubuntu 14.04 LTS machine.
     Open two terminal windows and run the client.sh and server.sh scripts to launch the UML virtual machines (user/password: root)
 \item
     On the server machine, run the following (you can use a TCP Port of your choice here):
-        \begin{verbatim}
+\begin{verbatim}
         netcat -l -p 33443
-        \end{verbatim}
+\end{verbatim}
 \item
     On the client machine, we first need to disable one of the two network interfaces, namely eth1. This is necessary due to some limitations currently affecting the Scapy tool and the attacking script (the connection will still be MPTCP, with a single subflow):
 \begin{verbatim}
         ifdown eth1
-        \end{verbatim}
+\end{verbatim}
 \item
     Now you can run netcat on the client, too:
 \begin{verbatim}
         netcat 10.2.1.2 33443
-        \end{verbatim}
+\end{verbatim}
 \item
     Try to exchange messages between client and server to verify that communication is active.
 \item
@@ -133,12 +133,12 @@ This procedure has been tested on a Ubuntu 14.04 LTS machine.
 \begin{verbatim}
         sudo python test\_add\_address.py 10.1.1.1 \
         10.2.1.2 10.1.1.2 tap2 tap0
-        \end{verbatim}
+\end{verbatim}
 
     NOTE: If an import error appears, try to install the missing dependencies with:
 \begin{verbatim}
         sudo apt-get install python-netaddr
-        \end{verbatim}
+\end{verbatim}
 \item
     Go back to the client UML terminal and start sending messages to the server. You should notice that while the messages exchange goes on, the attacking script progresses. 
     

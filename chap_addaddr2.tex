@@ -164,11 +164,25 @@ void tcp_parse_options(const struct sk_buff *skb,
 \end{lstlisting}
 
 Regarding the \textit{is\_valid\_addropt\_opsize()} function, it has been developed as a separate inline function called inside the "if" statement" for better readability, since the length's check with the additional ADD\_ADDR2 case involves now four possible configurations; the entire function content can be found in the appendix [add appendix reference where the patch is].
+Eventually, if the option size is correct and, in case of MPTCP version 1 or higher, the HMAC calculations at the sender and at the receiver match, the advertisement procedure is completed and the receiver can decide if to use the information to open a new subflow.
 
 
 \subsection{Retro-compatibility}
 \label{retrocomp}
-Version control mechanism was not present but it is needed to negotiate which format to use in a MPTCP session: ADD\_ADDR or ADD\_ADDR2.
+ADD\_ADDR2 is substantial modification of an important design aspect of the MPTCP protocol. ADD\_ADDR2 is indeed non interoperable with the current stable implementation of MPTCP version 0, since the augmented length of the option would cause the older network stack to discard the option right away.
+ADD\_ADDR2 is considered part of the new MPTCP protocol version number 1, whose implementation has to guarantee retro-compatibility. For this purpose, a version control mechanism has to be in place so that hosts can agree on the version to use upon initial handshake and successively operate according to such decision. Since ADD\_ADDR2 is the first step towards the implementation of the new features for MPTCP version 1, no version control mechanism was provided at the beginning of the development phase for ADD\_ADDR2. Indeed, version 0 was just an hardcoded value parsed into each MP\_CAPABLE option (option's format is shown in figure \ref{fig:opt_capable}) with no logic attached.
+
+
+MPTCP version 1 is currently a moving target, so the version bump is not included inside the patch for ADD\_ADDR2 that is just a part of the future changes introduced with the new version (more about this in the section [add ref to "Future Work"]. For this reason, it has been decided to give the system administrator the possibility of dynamically set the MPTCP version via a sysctl call, like the following:
+
+\begin{verbatim}
+        sysctl -w net.mptcp.mptcp_version=1
+\end{verbatim}
+
+It is possible to identify three main phases in the version agreement procedure: first of all the client insert the highest available MPTCP version number in the MP\_CAPABLE option. When the server gets the first MPTCP packet, it checks the version advertised by the client and answer with the highest version it supports that is less or equal to the client's version. As a last step, the client receives the answer from the server, and it checks that it is indeed a valid version (i.e. it is no greater than the one the client advertised in the first place); at this point, the client can backtrack to regular TCP it does not wish to use the requested version. Such procedure is defined in \rfc{6824bis-04}.
+
+In developing such functionalities, a problem was related to the fact that the user can change the version in use at any time via a sysctl, meaning that it is possible to change the version in the middle of an MPTCP connection. This is acceptable only if the initial handshake has been concluded, but it is not desirable to change such configuration during the MP\_CAPABLE exchange: it is possible that the first MP\_CAPABLE is retransmitted to the passive opener (following standard TCP retransmission procedures), and the version number inside the option must not change from the one used in the very first transmission. For this reason, the configured sysctl value is read and initialized for the MPTCP connection at an early stage, namely inside \textit{mptcp\_enable\_sock()} in \textit{net/mptcp/mptcp\_ctrl.c}; there, the value is saved into the newly introduced field \textit{mptcp\_ver} inside the \textit{tcp\_sock} structure. From there, the value is then read inside the \textit{mptcp\_syn\_options()}, where it is saved into a second structure: \textit{tcp\_out\_options}, which is used into the \textit{mptcp\_option\_write()} to write the value inside the packet sent on wire.
+
 
 \subsection{Extending the hashing function}
 \label{newhash}
