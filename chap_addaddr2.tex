@@ -169,7 +169,7 @@ Eventually, if the option size is correct and, in case of MPTCP version 1 or hig
 
 %Apparently there was a bug there! You can mention it and the related patch. https://listes-2.sipr.ucl.ac.be/sympa/arc/mptcp-dev/2016-02/msg00007.html
 
-\subsection{Retro-compatibility}
+\subsection{MPTCP version control}
 \label{retrocomp}
 ADD\_ADDR2 is substantial modification of an important design aspect of the MPTCP protocol. ADD\_ADDR2 is indeed non interoperable with the current stable implementation of MPTCP version 0, since the augmented length of the option would cause the older network stack to discard the option right away.
 ADD\_ADDR2 is considered part of the new MPTCP protocol version number 1, whose implementation has to guarantee retro-compatibility. For this purpose, a version control mechanism has to be in place so that hosts can agree on the version to use upon initial handshake and successively operate according to such decision. Since ADD\_ADDR2 is the first step towards the implementation of the new features for MPTCP version 1, no version control mechanism was provided at the beginning of the development phase for ADD\_ADDR2. Indeed, version 0 was just an hardcoded value parsed into each MP\_CAPABLE option (option's format is shown in figure \ref{fig:opt_capable}) with no logic attached.
@@ -223,7 +223,7 @@ The last step of the version agreement involves the final check performed by the
 After these messages have been exchanged, if a proper version has been agreed, both hosts will eventually call \textit{mptcp\_create\_master\_sk()} and in turns \textit{mptcp\_alloc\_mpcb()} with the information about the version, so that it is also saved in the MPTCP control block \textit{mptcp\_cb} for the session, from where it will be retrieved to process the ADD\_ADDR option accordingly as explained in section \ref{hmacinaddaddr}.
 
 
-\subsection{Extending the hashing function}
+\subsection{The MPTCP hashing function}
 \label{newhash}
 The current implementation of MPTCP in the Linux kernel adopts a specific function for all the HMAC-SHA1 calculations required by the protocol: it is named \textit{mptcp\_hmac\_sha1()} and it is placed inside \textit{net/mptcp/mptcp\_ctrl.c}. Before the introduction of ADD\_ADDR2, only the MP\_JOIN option required such functionality, with a fixed scheme regarding the type and length of the \textit{key} and \textit{message} used as input for the HMAC algorithm: the key is always the concatenation of the two 64-bit MPTCP keys exchanged via the MP\_CAPABLE option, while the message is always the combination or two random nonces of 32 bits each. For this reason, the function has been designed to accept such input values with no flexibility on the length and number of the byte strings passed along for the HMAC computation. The old prototype for \textit{mptcp\_hmac\_sha1()} is shown in listing \ref{oldhmac}.
 
@@ -276,13 +276,100 @@ void mptcp_hmac_sha1(u8 *key_1, u8 *key_2,
 	input[126] = 0x02;
 	input[127] = ((index - 64) * 8); /* Message length (bits) */
 	...
+}
 \end{lstlisting}
 
 In this first section the \textit{input} array is prepared for the subsequent HMAC-SHA1 operations (not reported here). From line 13 to line 16 it is possible to verify that the 16 bytes' key is properly xored with the first 16 bytes of the array as required for the proper HMAC calculation. From line 18 to line 27 the "for" loop scans the function arguments by retrieving two subsequent argument at a time: the first is an integer representing the length of the currently processed message, while the second is the pointer to the actual message. After checking that the total length of the concatenated message is not too long, the message is properly parsed into the \textit{input} array, before advancing the index accordingly and start a new "for" loop. The last part of the code snippet shows some padding additions required by the hashing function. The new API indeed requires to pass along the following set of information, in this order: pointer to the first 8 bytes of the HMAC key, pointer to the following 8 bytes of the key, pointer to the 20-byte placeholder where to save the final result of the HMAC calculation, the number of HMAC message's parts that have to be processed and, finally, the pointers to the various components composing the final HMAC input message, where each pointer has to be preceded by an integer determining the byte-length of the subsequent message. Indeed, this how the function is used to calculate the HMAC value in listing \ref{fullmesh}.
 
 
-\subsection{Crypto-API in MPTCP}
-A major problem was how to deal with the new hashing requirements introduced by ADD\_ADDR2. Extending the current MPTCP hashing function to deal with input messages of arbitrary size is a first point to explain. The second part has to deal with the whole analysis related to adopting the kernel CRYPTO APIs to calculate the HMAC values in MPTCP and why this is not advisable.
+Extending the hashing function used in MPTCP as just described has been the final solution adopted to implement ADD\_ADDR2. Nevertheless, another important investigation has been performed about an alternative way to achieve HMAC calculation within MPTCP. Such alternative takes into consideration the usage of the Crypto API framework that is already available in the Linux kernel. Code re-usability is indeed a fundamental aspect of Kernel development, and the Crypto module offers all the most popular block ciphers and hash functions computations, including the HMAC-SHA1. Such API has been introduced in the Linux kernel version 2.5.45 [\href{http://lwn.net/Articles/13587/}{href}], and it is now considered very stable and optimized for fast performances. 
+A patch to test the behavior of Crypto APIs in MPTCP has been developed [reference to the appendix] and tested. The \textit{mptcp\_hmac\_sha1()} function would be still extended to achieve better flexibility in managing the input messages, but it would end up being a simple wrapper calling the Crypto API functions, as shown in listing \ref{crypto}.
+
+\begin{lstlisting}[language=c, caption=\textit{\textit{mptcp\_hmac\_sha1() using Linux kernel Crypto API}}, label=crypto]
+void mptcp_hmac_sha1(u8 *key_1, u8 *key_2, u8 *hash_out, int arg_num, ...)
+{
+	struct mptcp_hmacsha1_pool *sp;
+	struct scatterlist sg;
+	u8 *key;
+	int i;
+	int length;
+	u8 *msg;
+	va_list list;
+
+	sp = mptcp_get_hmacsha1_pool();
+	if (!sp)
+		goto clear_hmac_noput;
+	sp->hmacsha1_desc.flags = 0;
+	key = sp->key_placeholder;
+
+	memcpy(&key[0], key_1, 8);
+	memcpy(&key[8], key_2, 8);
+
+	if (crypto_hash_setkey(sp->hmacsha1_desc.tfm, (u8 *)key, 16))
+		goto clear_hmac;
+	if (crypto_hash_init(&sp->hmacsha1_desc))
+		goto clear_hmac;
+
+	va_start(list, arg_num);
+	for (i = 0; i < (arg_num); i++) {
+		length = va_arg(list, int);
+		msg = va_arg(list, u8 *);
+		sg_init_one(&sg, msg, length);
+		if (crypto_hash_update(&sp->hmacsha1_desc, &sg, length))
+			goto clear_hmac;
+	}
+	va_end(list);
+
+	if (crypto_hash_final(&sp->hmacsha1_desc, hash_out))
+		goto clear_hmac;
+	mptcp_put_hmacsha1_pool();
+	return;
+
+clear_hmac:
+	mptcp_put_hmacsha1_pool();
+clear_hmac_noput:
+	memset((u8 *)hash_out, 0, 20);
+	return;
+}
+\end{lstlisting}
+
+Some of the Crypto functions' operations are straightforward: from a high level prospective, \textit{crypto\_hash\_setkey()} sets the HMAC-SHA1 key, \textit{crypto\_hash\_update()} automatically adds component to the HMAC-SHA1 message every time it is called and finally the \textit{crypto\_hash\_final()} computes the HMAC-SHA1 value.
+However, there an important initialization part that is required for proper functioning of such Crypto functions. Such initialization part is performed at the very beginning of the connection establishment, i.e. in the \textit{tcp\_init\_sock()} function inside \textit{net/ipv4/tcp.c}. The reason for this is that the Crypto library is not designed to work in an atomic context, since it involves memory allocations with the option GFP\_KERNEL: such option allows the allocation function to sleep and wait for available memory if that is not available immediately. However, sleeping is not allowed in atomic-context execution, which is the context in use when processing the MPTCP options and calling the hashing function. The function \textit{tcp\_init\_sock()} is not called in an atomic context, and it is a viable option where to insert the allocation function needed for the Crypto library. Such function is called \textit{crypto\_alloc\_hash()}, and it takes as first argument the kind of hashing algorithm we want to use, which in our case is: \textit{"hmac(sha1)"} (listing \ref{cryptoalloc}).
+
+\begin{lstlisting}[language=c, caption=\textit{\textit{Initializing the Crypto API framework}}, label=cryptoalloc]
+	struct crypto_hash *hash;
+
+	hash = crypto_alloc_hash("hmac(sha1)", 0, CRYPTO_ALG_ASYNC);
+	if (IS_ERR_OR_NULL(hash))
+		return;
+	per_cpu(mptcp_hmacsha1_pool, cpu).hmacsha1_desc.tfm = hash;
+\end{lstlisting}
+
+The \textit{crypto\_hash} structure is the object needed later on in the \textit{mptcp\_hmac\_sha1()} function: it is in fact saved in the "per\_cpu" structure called \textit{mptcp\_hmacsha1\_pool} and later on retrieved from the same structure as shown in line 11 of listing \ref{crypto}. The "per\_cpu" usage allows for better performances in a multi-core environment; even if this is out of the scope of this paper, the full implementation can be found in the appendix [add appendix].
+
+
+This preallocation solution would work just fine for digesting algorithms that do not require a key value to be set via the call to \textit{crypto\_hash\_setkey()} (listing \ref{crypto}, line 19). In fact, by inspecting such function it is possible to find cases in which memory allocations of kind GFP\_KERNEL are executed. This is never the case in our testing environment, but it cannot be guaranteed with absolute certainty that sleeping will be triggered in an atomic context thus causing Kernel crash. To cope with this problem, further investigation has been performed to verify what could cause a GFP\_KERNEL allocation in \textit{crypto\_hash\_setkey()}. If the input key is not aligned then another function (\href{http://lxr.free-electrons.com/source/crypto/shash.c#L61}{href}) is called for alignment purposes and the alignment process itself can cause sleeping (\href{http://lxr.free-electrons.com/source/crypto/shash.c#L43}{href}). In order to solve also this problem, an additional preallocation as been added right after the  \textit{crypto\_alloc\_hash()}, and shown in listing \ref{keyprealloc}.
+
+\begin{lstlisting}[language=c, caption=\textit{\textit{Preallocating an aligned placeholder for the HMAC key}}, label=keyprealloc]
+	/* Allocating aligned key_placeholder */
+	alignmask = crypto_hash_alignmask(hash);
+	absize = keylen + (alignmask & ~(crypto_tfm_ctx_alignment() - 1));
+	buffer = kmalloc(absize, GFP_KERNEL);
+	if (!buffer)
+		return;
+	alignbuffer = (u8 *)ALIGN((unsigned long)buffer, alignmask + 1);
+	per_cpu(mptcp_hmacsha1_pool, cpu).key_placeholder = alignbuffer;
+\end{lstlisting}
+
+Also the pointer to this aligned placeholder is added to the \textit{mptcp\_hmacsha1\_pool} struct and retrieved in \textit{mptcp\_hmac\_sha1()} as shown in \ref{crypto}, line 15. 
+
+
+Despite all the precautions adopted in the process, using the Crypto library in the atomic context of the network stack is not a completely supported out-of-the-box and it is not advisable to deploy such solution. In order to compare our results and investigations with other current implementations, the code for SCTP in the Linux kernel has been inspected. In fact, SCTP uses the Crypto library to perform hashing operations that require the \textit{crypto\_hash\_setkey()} (\href{http://lxr.free-electrons.com/source/net/sctp/auth.c#L751}{href}), in the same context of our MPTCP case. To verify this, Linux kernel 4.1.0 has been compiled with the option \textit{CONFIG\_DEBUG\_ATOMIC\_SLEEP} enabled and a SCTP connection has been started. The afore-mentioned option would provide a warning if a function that might potentially sleep is called inside an atomic section. Indeed, the SCTP connectioned triggered such warning.
+An email has been sent to the official linux-crypto mailing-list for clarifications, and the issue with the current SCTP implementation has been acknowledged (\href{http://comments.gmane.org/gmane.linux.kernel.cryptoapi/17937}{href}).
+
+
+The investigation about the usage of the Crypto API in the MPTCP implementation stopped at this point, but the entire work and related patches have been made available for future references. If the Crypto framework is updated to work in atomic context, then its usage in MPTCP would be the most likely the best option. Another possibility is to study all the possible paths and functions that can be reached by the \textit{crypto\_hash\_setkey()} function to make sure that all the required memory allocations have been already taken care of before entering the atomic context in the network stack. For now, the separate function \textit{mptcp\_hmac\_sha1()} made available in MPTCP is considered the best solution.
+
 
 \subsection{Port advertisement}
 \label{portad}
