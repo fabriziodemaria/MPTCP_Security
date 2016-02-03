@@ -57,6 +57,7 @@ Regarding the operational flow in the stack upon reception of a SYN packet, ther
 This section presented an overview of the most important data structures and functions used in MPTCP to handle connection establishment and subflow management. The following sections will deal with the ADD\_ADDR functionality in the Linux kernel and how this was modified to implement the new format ADD\_ADDR2.
 
 \subsection{Truncated HMAC in ADD\_ADDR}
+\label{hmacinaddaddr}
 The part of code in the Linux kernel defining the format of every MPTCP options is contained in \textit{include/net/mptcp.h}. For each MPTCP option there is a corresponding structure in this header file that contains all the fields for the option in the right order and with the right format. The ADD\_ADDR option is defined in the \textit{mp\_add\_addr} struct. A first step towards achieving a full implementation of ADD\_ADDR2 is indeed to add the truncated HMAC field to the ADD\_ADDR message and place it after the optional port, both in case of IPv4 and IPv6 (listing \ref{mpaddaddr}, lines 18 and 23).
 
 \begin{lstlisting}[language=c, caption=\textit{mp\_add\_addr struct in the kernel}, label=mpaddaddr]
@@ -139,7 +140,7 @@ Later on, in the file \textit{net/mptcp/mptcp\_output.c} the \textit{mp\_add\_ad
  }
 \end{lstlisting}
 
-The MPTCP version in use is again checked to determine if to add the HMAC field or not. If the version is 1 or greater, then a \textit{memcpy} of the first 8 bytes of the HMAC value is performed to the location \textit{(char *)mpadd->u.v4.mac - 2}; the -2 is used to start the copying right after the advertised address (IPv4 in this case), thus skipping the optional port field. It is important to mention that the actual implementation of MPTCP for the Linux kernel lacks the feature about port advertisement: more precisely, a port is never added to the ADD\_ADDR option, even if the code to handle a possible port value upon ADD\_ADDR reception is in place and fully operative. Further considerations on port advertisement capabilities can be found in section \ref{portad}. The new ADD\_ADDR2 has different lengths with respect to the previous version, since the 8 bytes truncated HMAC is added. New "len" values are defined, by adding "\_VER1" to the name of the previous definitions: \textit{MPTCP\_SUB\_LEN\_ADD\_ADDR4\_VER1} is 16 (8 in ADD\_ADDR), and \textit{MPTCP\_SUB\_LEN\_ADD\_ADDR6\_VER1} is 28 (20 in ADD\_ADDR). All the code reported so far addresses the IPv4 advertisement, but IPv6 support is provided throughout the entire set of produced patches.
+The MPTCP version in use is again checked to determine if to add the HMAC field or not. If the version is 1 or greater, then a \textit{memcpy} of the first 8 bytes of the HMAC value is performed to the location \textit{(char *)mpadd->u.v4.mac - 2}; the "-2" is used to start the copying right after the advertised address (IPv4 in this case), thus skipping the optional port field. It is important to mention that the actual implementation of MPTCP for the Linux kernel lacks the feature about port advertisement: more precisely, a port is never added to the ADD\_ADDR option, even if the code to handle a possible port value upon ADD\_ADDR reception is in place and fully operative. Further considerations on port advertisement capabilities can be found in section \ref{portad}. The new ADD\_ADDR2 has different lengths with respect to the previous version, since the 8 bytes truncated HMAC is added. New "len" values are defined, by adding "\_VER1" to the name of the previous definitions: \textit{MPTCP\_SUB\_LEN\_ADD\_ADDR4\_VER1} is 16 (8 in ADD\_ADDR), and \textit{MPTCP\_SUB\_LEN\_ADD\_ADDR6\_VER1} is 28 (20 in ADD\_ADDR). All the code reported so far addresses the IPv4 advertisement, but IPv6 support is provided throughout the entire set of produced patches.
 
 
 At the receiver side, the ADD\_ADDR2 option is parsed, the HMAC value is calculated (using as HMAC key the MPTCP key of the sender) and a \textit{memcpy} function is used to check that the values coincide. If they do not coincide, the message is simply discarded. Such operations are performed in the function \textit{mptcp\_handle\_add\_addr()} in \textit{net/mptcp/mptcp\_input.c}. Such function is called only if the length of the received option corresponds to the expected values, according to the type of message (ADD\_ADDR or ADD\_ADDR2). This check is performed in another function within the same file, called \textit{mptcp\_parse\_options} (listing \ref{badsize}).
@@ -166,6 +167,7 @@ void tcp_parse_options(const struct sk_buff *skb,
 Regarding the \textit{is\_valid\_addropt\_opsize()} function, it has been developed as a separate inline function called inside the "if" statement" for better readability, since the length's check with the additional ADD\_ADDR2 case involves now four possible configurations; the entire function content can be found in the appendix [add appendix reference where the patch is].
 Eventually, if the option size is correct and, in case of MPTCP version 1 or higher, the HMAC calculations at the sender and at the receiver match, the advertisement procedure is completed and the receiver can decide if to use the information to open a new subflow.
 
+%Apparently there was a bug there! You can mention it and the related patch. https://listes-2.sipr.ucl.ac.be/sympa/arc/mptcp-dev/2016-02/msg00007.html
 
 \subsection{Retro-compatibility}
 \label{retrocomp}
@@ -179,9 +181,46 @@ MPTCP version 1 is currently a moving target, so the version bump is not include
         sysctl -w net.mptcp.mptcp_version=1
 \end{verbatim}
 
-It is possible to identify three main phases in the version agreement procedure: first of all the client insert the highest available MPTCP version number in the MP\_CAPABLE option. When the server gets the first MPTCP packet, it checks the version advertised by the client and answer with the highest version it supports that is less or equal to the client's version. As a last step, the client receives the answer from the server, and it checks that it is indeed a valid version (i.e. it is no greater than the one the client advertised in the first place); at this point, the client can backtrack to regular TCP it does not wish to use the requested version. Such procedure is defined in \rfc{6824bis-04}.
+It is possible to identify three main phases in the version agreement procedure, defined in \rfc{6824bis-04}.:
 
-In developing such functionalities, a problem was related to the fact that the user can change the version in use at any time via a sysctl, meaning that it is possible to change the version in the middle of an MPTCP connection. This is acceptable only if the initial handshake has been concluded, but it is not desirable to change such configuration during the MP\_CAPABLE exchange: it is possible that the first MP\_CAPABLE is retransmitted to the passive opener (following standard TCP retransmission procedures), and the version number inside the option must not change from the one used in the very first transmission. For this reason, the configured sysctl value is read and initialized for the MPTCP connection at an early stage, namely inside \textit{mptcp\_enable\_sock()} in \textit{net/mptcp/mptcp\_ctrl.c}; there, the value is saved into the newly introduced field \textit{mptcp\_ver} inside the \textit{tcp\_sock} structure. From there, the value is then read inside the \textit{mptcp\_syn\_options()}, where it is saved into a second structure: \textit{tcp\_out\_options}, which is used into the \textit{mptcp\_option\_write()} to write the value inside the packet sent on wire.
+\begin{enumerate}
+  \item The client insert the highest available MPTCP version number it supports into the MP\_CAPABLE option;
+  \item When the server gets the first MPTCP packet, it checks the version advertised by the client and answer with the highest version it supports that is less or equal to the client's version;
+  \item As a last step, the client receives the answer from the server, and it checks that it is indeed a valid version (i.e. it is no greater than the one the client advertised in the first place); at this point, the client can backtrack to regular TCP if it does not wish to use the requested version.
+\end{enumerate}
+
+In developing such functionalities, a problem was related to the fact that the user can change the version in use at any time via a sysctl, meaning that it is possible to change the version in the middle of an MPTCP connection. It is not desirable to change such configuration during the MP\_CAPABLE exchange: it is possible that the first MP\_CAPABLE is retransmitted to the passive opener (following standard TCP retransmission procedures), and the version number inside retransmitted packets must not change from the one used in the very first transmission. For this reason, the configured sysctl value is read and initialized for the MPTCP connection at an early stage, namely when \textit{mptcp\_enable\_sock()} in \textit{net/mptcp/mptcp\_ctrl.c} is called; there, the value is saved into the newly introduced field \textit{mptcp\_ver} inside the \textit{tcp\_sock} structure (listing \ref{verphase0}).
+
+\begin{lstlisting}[language=c, caption=\textit{MPTCP version agreement, initializing sysctl value}, label=verphase0]
+ void mptcp_enable_sock(struct sock *sk)
+ {
+ 	if (!sock_flag(sk, SOCK_MPTCP)) {
+ 		sock_set_flag(sk, SOCK_MPTCP);
+		tcp_sk(sk)->mptcp_ver = sysctl_mptcp_version;
+	...
+\end{lstlisting}
+
+Even if the sysctl value is changed by the user after the \textit{mptcp\_enable\_sock()} has been called, the value in \textit{tcp\_sock} for a specific connection is not affected, and that is indeed the value used to create and send the SYN+MP\_CAPABLE option (even in case of retransmissions). 
+
+
+The same initialization procedure is executed when the MP\_CAPABLE packet is received at the server side, meaning that the code for version agreement at the server also retrieve the local MPTCP version via \textit{tp->mptcp\_ver}, where \textit{tp} is the pointer to the \textit{tcp\_struct} for the connection (listing \ref{verphase2}). The function \textit{mptcp\_reqsk\_new\_mptcp()} in \textit{net/mptcp/mptcp\_ctrl.c} is called and the code in listing \ref{verphase2} is executed to set the highest version available that is not greater than the one advertised by the client. The \textit{mopt} pointer points to the structure containing the received MPTCP options from the client, while \textit{mtreq} is a pointer to the \textit{mptcp\_request\_sock} structure, where the final version chosen by the server is saved for now.
+
+\begin{lstlisting}[language=c, caption=\textit{MPTCP version agreement, phase 2}, label=verphase2]
+	if (mopt->mptcp_ver >= tp->mptcp_ver)
+		mtreq->mptcp_ver = tp->mptcp_ver;
+	else
+		mtreq->mptcp_ver = mopt->mptcp_ver;
+\end{lstlisting}
+
+The last step of the version agreement involves the final check performed by the client on the version value sent back by the server: it has to be equal or less then the one originally advertised in the first MP\_CAPABLE message. Such check is indeed added to the function \textit{mptcp\_rcv\_synsent\_state\_process()} inside \textit{net/mptcp/mptcp\_input.c} (listing \ref{verphase3}): \textit{tcp\_sk(sk)} is used to obtain the pointer to the \textit{tcp\_sock} structure, where \textit{mptcp\_ver} is retrieved and compared to the server's MPTCP version residing in \textit{mopt->mptcp\_ver}. If the comparison fails, the \textit{fallback} label is hit to trigger the fallback procedure to regular TCP.
+
+\begin{lstlisting}[language=c, caption=\textit{MPTCP version agreement, phase 3}, label=verphase3]
+	if (mopt->mptcp_ver > tcp_sk(sk)->mptcp_ver)
+		/* TODO Consider adding new MPTCP_INC_STATS entry */
+		goto fallback;
+\end{lstlisting}
+
+After these messages have been exchanged, if a proper version has been agreed, both hosts will eventually call \textit{mptcp\_create\_master\_sk()} and in turns \textit{mptcp\_alloc\_mpcb()} with the information about the version, so that it is also saved in the MPTCP control block \textit{mptcp\_cb} for the session, from where it will be retrieved to process the ADD\_ADDR option accordingly as explained in section \ref{hmacinaddaddr}.
 
 
 \subsection{Extending the hashing function}
