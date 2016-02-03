@@ -225,6 +225,64 @@ After these messages have been exchanged, if a proper version has been agreed, b
 
 \subsection{Extending the hashing function}
 \label{newhash}
+The current implementation of MPTCP in the Linux kernel adopts a specific function for all the HMAC-SHA1 calculations required by the protocol: it is named \textit{mptcp\_hmac\_sha1()} and it is placed inside \textit{net/mptcp/mptcp\_ctrl.c}. Before the introduction of ADD\_ADDR2, only the MP\_JOIN option required such functionality, with a fixed scheme regarding the type and length of the \textit{key} and \textit{message} used as input for the HMAC algorithm: the key is always the concatenation of the two 64-bit MPTCP keys exchanged via the MP\_CAPABLE option, while the message is always the combination or two random nonces of 32 bits each. For this reason, the function has been designed to accept such input values with no flexibility on the length and number of the byte strings passed along for the HMAC computation. The old prototype for \textit{mptcp\_hmac\_sha1()} is shown in listing \ref{oldhmac}.
+
+\begin{lstlisting}[language=c, caption=\textit{Prototype for the old \textit{mptcp\_hmac\_sha1() function}}, label=oldhmac]
+void mptcp_hmac_sha1(u8 *key_1, u8 *key_2, u8 *rand_1, u8 *rand_2, 
+                     u32 *hash_out);
+\end{lstlisting}
+ 
+The old implementation of the function does indeed concatenate the first 8 bytes pointed by \textit{key\_1} and \textit{key\_2} to get the 16 bytes key, and it later concatenates the first 4 bytes of \textit{rand\_1} and \textit{rand\_2} to originate the 8 bytes message. The \textit{hash\_out} pointers references to the placeholder for the final result of the calculation (which is 20 bytes long).
+
+
+With ADD\_ADDR2 the requirements for the HMAC calculation changed. The hashing key follows the same configuration of the MP\_JOIN case, while the message is now the concatenation of some of the fields in the ADD\_ADDR2 option, namely the single byte Address ID, the advertised address (that can be a 4 bytes IPv4 address or a IPv6 16 bytes address) and, if present, the 2 bytes port value. Instead of implementing a separate hashing function for dealing with this case,  it was decided to extend the current one in order to accept an arbitrary number of message of arbitrary length (checking that the total length doesn't overcome a certain limit). For what concerns the HMAC key, that part is expected not to change for future usage in various parts of MPTCP since it is most likely based on the two MPTCP keys exchanged during the initial handshake. For the message part, the new function uses that C functionality for variable argument lists based on va\_list. The first part of the new hashing function is shown in listing \ref{newhmac}.
+
+\begin{lstlisting}[language=c, caption=\textit{Implementation for the new \textit{mptcp\_hmac\_sha1() function (first part)}}, label=newhmac]
+void mptcp_hmac_sha1(u8 *key_1, u8 *key_2, 
+                     u32 *hash_out, int arg_num, ...)
+{
+    u32 workspace[SHA_WORKSPACE_WORDS];
+	u8 input[128]; /* 2 512-bit blocks */
+	int i;
+	int index;
+	int length;
+	u8 *msg;
+	va_list list;
+
+	memset(workspace, 0, sizeof(workspace));
+
+	/* Generate key xored with ipad */
+	memset(input, 0x36, 64);
+	for (i = 0; i < 8; i++)
+		input[i] ^= key_1[i];
+	for (i = 0; i < 8; i++)
+		input[i + 8] ^= key_2[i];
+
+	va_start(list, arg_num);
+	index = 64;
+	for (i = 0; i < arg_num; i++) {
+		length = va_arg(list, int);
+		msg = va_arg(list, u8 *);
+		BUG_ON(index + length > 125); /* Message is too long */
+		memcpy(&input[index], msg, length);
+		index += length;
+	}
+	va_end(list);
+
+	input[index] = 0x80; /* Padding: First bit after message = 1 */
+	memset(&input[index + 1], 0, (126 - index));
+
+	/* Padding: Length of the message = 512 + message length (bits) */
+	input[126] = 0x02;
+	input[127] = ((index - 64) * 8); /* Message length (bits) */
+	...
+\end{lstlisting}
+
+In this first section the \textit{input} array is prepared for the subsequent HMAC-SHA1 operations (not reported here). From line 13 to line 16 it is possible to verify that the 16 bytes' key is properly xored with the first 16 bytes of the array as required for the proper HMAC calculation. From line 18 to line 27 the "for" loop scans the function arguments by retrieving two subsequent argument at a time: the first is an integer representing the length of the currently processed message, while the second is the pointer to the actual message. After checking that the total length of the concatenated message is not too long, the message is properly parsed into the \textit{input} array, before advancing the index accordingly and start a new "for" loop. The last part of the code snippet shows some padding additions required by the hashing function. The new API indeed requires to pass along the following set of information, in this order: pointer to the first 8 bytes of the HMAC key, pointer to the following 8 bytes of the key, pointer to the 20-byte placeholder where to save the final result of the HMAC calculation, the number of HMAC message's parts that have to be processed and, finally, the pointers to the various components composing the final HMAC input message, where each pointer has to be preceded by an integer determining the byte-length of the subsequent message. Indeed, this how the function is used to calculate the HMAC value in listing \ref{fullmesh}.
+
+
+\subsection{Crypto-API in MPTCP}
+A major problem was how to deal with the new hashing requirements introduced by ADD\_ADDR2. Extending the current MPTCP hashing function to deal with input messages of arbitrary size is a first point to explain. The second part has to deal with the whole analysis related to adopting the kernel CRYPTO APIs to calculate the HMAC values in MPTCP and why this is not advisable.
 
 \subsection{Port advertisement}
 \label{portad}
@@ -233,8 +291,6 @@ Port advertisement in ADD\_ADDR is possible according to RFC specifications but 
 \subsection{IPv6 considerations}
 Longer addresses brought some issues related to TCP option fields limitations.
 
-\subsection{Crypto-API in MPTCP}
-A major problem was how to deal with the new hashing requirements introduced by ADD\_ADDR2. Extending the current MPTCP hashing function to deal with input messages of arbitrary size is a first point to explain. The second part has to deal with the whole analysis related to adopting the kernel CRYPTO APIs to calculate the HMAC values in MPTCP and why this is not advisable.
 
 \section{Other contributions}
 Another minor part of the thesis work on MPTCP is related to some small contributions to the official RFC documentation and other open-source projects.
