@@ -98,7 +98,7 @@ Particular attention is used to correctly pack the structure, in order to avoid 
 When the transmission of an ADD\_ADDR2 is triggered, there is a specific function called \textit{full\_mesh\_addr\_signal()} in \textit{net/mptcp/mptcp\_fullmesh.c} that is called to prepare all the fields that will be later on parsed into the outgoing packet. At this point, the fields are saved in a \textit{tcp\_out\_options} structure, defined in \textit{include/linux/tcp.h}. A new \textit{\_\_u64 trunc\_mac} entry has been added to such structure in order to store the new truncated HMAC used in ADD\_ADDR2. 
 It is now important to mention that the ADD\_ADDR2 has been designed as a major update for MPTCP, thus being part of the next version bump (MPTCP version 1). Retro-compatibility with version 0 and ADD\_ADDR has to be guaranteed, meaning that the truncated HMAC is added into the ADD\_ADDR message only if version 1 has been established by both hosts during the initial handshake. More about the newly introduced version control is reported in the next section (section [\ref{retrocomp}]).
 
-\begin{lstlisting}[language=c, caption=\textit{New ADD\_ADDR HMAC calculation (outgoing packet)}, label=fullmesh]
+\begin{lstlisting}[language=c, caption=\textit{New ADD\_ADDR HMAC calculation (outgoing packet, IPv4)}, label=fullmesh]
  if (mpcb->mptcp_ver >= MPTCP_VERSION_1) {
  u8 mptcp_hash_mac[20];
  u8 no_key[8];
@@ -117,9 +117,10 @@ In listing \ref{fullmesh} is reported the added code inside \textit{net/mptcp/mp
 
 
 Regarding the key used for the HMAC calculation, that is defined as the concatenation of the first two arguments of the hashing function. It corresponds to the key of the sender as defined during the MP\_CAPABLE exchange, followed by 8 bytes initialized to 0 (the \textit{no\_key} field). Even if the 8 trailing bytes are not following the specifications in \rfc{6824bis-04}, these are maintained in order not to change the way the hashing function currently manages the keys for the HMAC computation: \textit{mptcp\_hmac\_sha1} accepts exactly two messages of 8 bytes each and concatenates them to form the final hashing key. This behavior is accepted since it reasonable to assume that in MPTCP the key for any HMAC calculation will always be the concatenation of the two 64-bit keys exchanged via the MP\_CAPABLE option during the initial handshake. This is not the case in the specifications of \rfc{6824bis-04}, but there is no good reason to only use the sender's key at this point. In fact, when an ADD\_ADDR is issued the connection is already up and running, meaning that both hosts know both keys, and concatenating them for the HMAC hashing key improves security overall (an attacker has to know both keys to forge valid HMAC values). These reasonings have been pointed out in the official IETF mailing-list and they have been positively reviewed [\href{https://mailarchive.ietf.org/arch/search/?email_list=multipathtcp&q=RFC6824bis-04+ADD_ADDR2+comments}{href}]: \rfc{6824bis-05}, released in January 2016, modifies the specifications for ADD\_ADDR2 so that both keys are used. For this reason it is acceptable to keep the \textit{no\_key} value in the code as a temporary (incorrect) implementation of \rfc{6824bis-04} standards, since it will be soon replaced with the key of the receiver. 
+For what regards the message of the HMAC calculation, that is composed of the Address ID and the advertised address. Note that the code does not include the code for handling the port value in the HMAC. Indeed, port advertisement is not yet part of the current MPTCP implementation in the Linux Kernel. More details about this can be found in section \ref{portad}
 
 The HMAC calculation produces 160 bits that are saved in the placeholder called \textit{mptcp\_hash\_mac}, whose pointer is later saved into the previously mentioned new field in \textit{tcp\_out\_options} (line 11 in \ref{fullmesh}).
-Later on, in the file \textit{net/mptcp/mptcp\_output.c} the \textit{mp\_add\_addr} is finally constructed by using the elements in the \textit{tcp\_out\_options} data structure, named \textit{opts} in listing \ref{mpoutput}.
+Later on, in the function \textit{mptcp\_options\_write()} (file \textit{net/mptcp/mptcp\_output.c}) the \textit{mp\_add\_addr} is finally constructed by using the elements in the \textit{tcp\_out\_options} data structure, named \textit{opts} in listing \ref{mpoutput}.
 
 \begin{lstlisting}[language=c, caption=\textit{Building ADD\_ADDR2 output message}, label=mpoutput]
  mpadd->kind = TCPOPT_MPTCP;
@@ -166,6 +167,23 @@ void tcp_parse_options(const struct sk_buff *skb,
 
 Regarding the \textit{is\_valid\_addropt\_opsize()} function, it has been developed as a separate inline function called inside the "if" statement" for better readability, since the length's check with the additional ADD\_ADDR2 case involves now four possible configurations; the entire function content can be found in the appendix [add appendix reference where the patch is].
 Eventually, if the option size is correct and, in case of MPTCP version 1 or higher, the HMAC calculations at the sender and at the receiver match, the advertisement procedure is completed and the receiver can decide if to use the information to open a new subflow.
+
+
+Eventually, the function \textit{mptcp\_handle\_add\_addr()} takes care of verifying the HMAC and triggering the procedures used to add the advertised address, if appropriate. The IPv4 version of the HMAC verification code at the receiver is shown in listing \ref{addaddrinput}, where the HMAC calculated locally is compared with the one received in the ADD\_ADDR2 message with the \textit{memcmp()} in line 8: the "return" in line 10 does indeed prevent the information from the ADD\_ADDR2 to be further processed, if \textit{memcmp()} fails. Regarding the 
+
+\begin{lstlisting}[language=c, caption=\textit{New ADD\_ADDR HMAC calculation (incoming packet)}, label=addaddrinput]
+        ...
+		mptcp_hmac_sha1((u8 *)&mpcb->mptcp_rem_key,
+				(u8 *)no_key,
+				(u32 *)hash_mac_check, msg_parts,
+				1, (u8 *)&mpadd->addr_id,
+				4, (u8 *)&mpadd->u.v4.addr.s_addr,
+				2, (u8 *)&mpadd->u.v4.port);
+		if (memcmp(hash_mac_check, recv_hmac, 8) != 0)
+			/* ADD_ADDR2 discarded */
+			return;
+		...
+\end{lstlisting}
 
 %Apparently there was a bug there! You can mention it and the related patch. https://listes-2.sipr.ucl.ac.be/sympa/arc/mptcp-dev/2016-02/msg00007.html
 
@@ -373,7 +391,96 @@ The investigation about the usage of the Crypto API in the MPTCP implementation 
 
 \subsection{Port advertisement}
 \label{portad}
-Port advertisement in ADD\_ADDR is possible according to RFC specifications but it was not part of the implementation at the beginning of the thesis work, so it has been added.
+Port advertisement in ADD\_ADDR is possible according to RFC specifications but it is only partially supported by the current implementation of MPTCP for the Linux Kernel. In fact, the MPTCP in Linux Kernel is currently able to properly adopt port values advertised in the incoming ADD\_ADDR messages, but there is no code that actually allows to add the port field in the outgoing messages.
+Portions of the code for handling incoming ADD\_ADDR messages advertising IPv4 addresses is now reported in listing \ref{portreceiver}.
+
+\begin{lstlisting}[language=c, caption=\textit{Handling port field in ADD\_ADDR2 at the receiver}, label=portreceiver]
+    ...
+	if (mpadd->ipver == 4) {
+        ...
+		recv_hmac = (char *)mpadd->u.v4.mac;
+		if (mpadd->len == MPTCP_SUB_LEN_ADD_ADDR4_VER1) {
+			recv_hmac -= sizeof(mpadd->u.v4.port);
+			msg_parts = 2;
+		} else if (mpadd->len == MPTCP_SUB_LEN_ADD_ADDR4_VER1 + 2) {
+			msg_parts = 3;
+		}
+		mptcp_hmac_sha1((u8 *)&mpcb->mptcp_rem_key,
+				(u8 *)no_key,
+				(u32 *)hash_mac_check, msg_parts,
+				1, (u8 *)&mpadd->addr_id,
+				4, (u8 *)&mpadd->u.v4.addr.s_addr,
+				2, (u8 *)&mpadd->u.v4.port);
+		...
+		if ((mpcb->mptcp_ver == MPTCP_VERSION_0 &&
+		     mpadd->len == MPTCP_SUB_LEN_ADD_ADDR4 + 2) ||
+		     (mpcb->mptcp_ver == MPTCP_VERSION_1 &&
+		     mpadd->len == MPTCP_SUB_LEN_ADD_ADDR4_VER1 + 2))
+			port  = mpadd->u.v4.port;
+	...	
+	}
+...
+\end{lstlisting}
+
+It is possible to notice that the port field is identified by inspecting the actual length of the ADD\_ADDR message according to the MPTCP version in use. That is the case for the three "if" statements displayed, where the first two are used to properly initialize pointers for the HMAC calculation, and the last one is used to save the port value if that is present in the ADD\_ADDR message. The flexibility provided by the updated hashing function (section \ref{newhash}) allows to use the \textit{msg\_parts} integer to include or not to include the port value in the HMAC calculation. 
+
+
+In the previous section it has been mentioned that the port advertisement is not yet supported at the sender, and that can be checked by inspecting listings \ref{fullmesh} and \ref{mpoutput}. 
+However, in order to properly test all the introduced patches, port advertisement support has been partially implemented to test this functionality: if the kernel intends to announce an IP address, the first function taking care of retrieving the IP address and preparing all the fields for ADD\_ADDR is \textit{full\_mesh\_addr\_signal()} in \textit{net/mptcp/mptcp\_fullmesh.c}. There, the interested fields are saved into the \textit{opts} pointer (\textit{tcp\_out\_options} struct) and later retrieved in \textit{mptcp\_options\_write()} (listing \ref{mpoutput}). In such function, a newly introduced flag bit in \textit{opts} called \textit{add\_addr\_port} would be used to determine if a port value has indeed to be written in the outgoing ADD\_ADDR message. The actual "write" function in \textit{mptcp\_options\_write()} with port advertisement support would look like the one in listing \ref{outport} (IPv4 case).
+
+\begin{lstlisting}[language=c, caption=\textit{Code to write the outgoing ADD\_ADDR(2) packet, with added support for the port value}, label=outport]
+	...
+	mpadd->kind = TCPOPT_MPTCP;
+	if (opts->add_addr_v4) {
+		mpadd->sub = MPTCP_SUB_ADD_ADDR;
+		mpadd->ipver = 4;
+		mpadd->addr_id = opts->add_addr4.addr_id;
+		mpadd->u.v4.addr = opts->add_addr4.addr;
+		len_align = MPTCP_SUB_LEN_ADD_ADDR4_ALIGN >> 2;
+		if (!opts->add_addr_port) {
+			mpadd->len = MPTCP_SUB_LEN_ADD_ADDR4;
+			goto no_port_v4;
+		}
+		mpadd->u.v4.port = opts->add_addr4.port;
+		if (mpcb->mptcp_ver < 1) {
+			mpadd->len = MPTCP_SUB_LEN_ADD_ADDR4 + 2;
+			/* Add padding at the end of option */
+			padd_area = (char *)&mpadd->u.v4.port;
+			padd_area += sizeof(mpadd->u.v4.port);
+			*(padd_area++) = TCPOPT_NOP;
+			*(padd_area++) = TCPOPT_NOP;
+			/* Adding 4 due to port and two NOP's */
+			len_align =
+			(MPTCP_SUB_LEN_ADD_ADDR4_ALIGN + 4) >> 2;
+			goto next_phase_v4;
+		}
+		mpadd->len = MPTCP_SUB_LEN_ADD_ADDR4_VER1 + 2;
+		memcpy(mpadd->u.v4.mac,
+		       (char *)&opts->add_addr4.trunc_mac, 8);
+		/* Add padding at the end of option */
+		padd_area = (char *)&mpadd->u.v4.mac;
+		padd_area += sizeof(mpadd->u.v4.mac);
+		*(padd_area++) = TCPOPT_NOP;
+		*(padd_area++) = TCPOPT_NOP;
+		/* Adding 4 due to port and two NOP's */
+		len_align =
+		(MPTCP_SUB_LEN_ADD_ADDR4_ALIGN_VER1 + 4) >> 2;
+		goto next_phase_v4;
+no_port_v4:
+		if (mpcb->mptcp_ver < 1)
+			goto next_phase_v4;
+		mpadd->len = MPTCP_SUB_LEN_ADD_ADDR4_VER1;
+		memcpy((char *)mpadd->u.v4.mac - 2,
+		       (char *)&opts->add_addr4.trunc_mac, 8);
+		len_align = MPTCP_SUB_LEN_ADD_ADDR4_ALIGN_VER1 >> 2;
+next_phase_v4:
+		ptr += len_align;
+	}
+	...
+\end{lstlisting}
+
+At line 9 there is the check regarding the presence of a valid port value in \textit{opts->add\_addr4.port}. This code will also add padding in case the port is written into the message. This solution have been adopted to test random, hardcoded ports in the address advertisement procedures of both ADD\_ADDR and ADD\_ADDR2, but it was not eventually merged into the official MPTCP implementation because of the added complexity that is not required at the moment, since no port is ever advertised in the current implementation.
+
 
 \subsection{IPv6 considerations}
 Longer addresses brought some issues related to TCP option fields limitations.
