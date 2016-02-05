@@ -116,7 +116,7 @@ It is now important to mention that the ADD\_ADDR2 has been designed as a major 
 In listing \ref{fullmesh} is reported the added code inside \textit{net/mptcp/mptcp\_fullmesh.c} that is used to calculate the HMAC value as previously described. It is possible to notice the "if" statement checking that the MPTCP version in use is indeed 1 or greater. The actual hashing function adopted is \textit{mptcp\_hmac\_sha1}; such function has been also modified to accept as arguments an arbitrary number of messages of arbitrary size (more details about this updated function are reported in section \ref{newhash}). 
 
 
-Regarding the key used for the HMAC calculation, that is defined as the concatenation of the first two arguments of the hashing function. It corresponds to the key of the sender as defined during the MP\_CAPABLE exchange, followed by 8 bytes initialized to 0 (the \textit{no\_key} field). Even if the 8 trailing bytes are not following the specifications in \rfc{6824bis-04}, these are maintained in order not to change the way the hashing function currently manages the keys for the HMAC computation: \textit{mptcp\_hmac\_sha1} accepts exactly two messages of 8 bytes each and concatenates them to form the final hashing key. This behavior is accepted since it reasonable to assume that in MPTCP the key for any HMAC calculation will always be the concatenation of the two 64-bit keys exchanged via the MP\_CAPABLE option during the initial handshake. This is not the case in the specifications of \rfc{6824bis-04}, but there is no good reason to only use the sender's key at this point. In fact, when an ADD\_ADDR is issued the connection is already up and running, meaning that both hosts know both keys, and concatenating them for the HMAC hashing key improves security overall (an attacker has to know both keys to forge valid HMAC values). These reasonings have been pointed out in the official IETF mailing-list and they have been positively reviewed [\href{https://mailarchive.ietf.org/arch/search/?email_list=multipathtcp&q=RFC6824bis-04+ADD_ADDR2+comments}{href}]: \rfc{6824bis-05}, released in January 2016, modifies the specifications for ADD\_ADDR2 so that both keys are used. For this reason it is acceptable to keep the \textit{no\_key} value in the code as a temporary (incorrect) implementation of \rfc{6824bis-04} standards, since it will be soon replaced with the key of the receiver. 
+Regarding the key used for the HMAC calculation, that is defined as the concatenation of the first two arguments of the hashing function. It corresponds to the key of the sender as defined during the MP\_CAPABLE exchange, followed by 8 bytes initialized to 0 (the \textit{no\_key} field). Even if the 8 trailing bytes are not compliant with the specifications in \rfc{6824bis-04}, these are maintained in order not to change the way the hashing function currently manages the keys for the HMAC computation: \textit{mptcp\_hmac\_sha1} accepts exactly two messages of 8 bytes each and concatenates them to form the final hashing key. This incorrect implementation is temporarily acceptable since the protocol specifications regarding this point change in the more recent drafts developed after \ref{6824bis-04}, as reported in section \href{otherc}.
 For what regards the message of the HMAC calculation, that is composed of the Address ID and the advertised address. Note that the code does not include the code for handling the port value in the HMAC. Indeed, port advertisement is not yet part of the current MPTCP implementation in the Linux Kernel. More details about this can be found in section \ref{portad}
 
 The HMAC calculation produces 160 bits that are saved in the placeholder called \textit{mptcp\_hash\_mac}, whose pointer is later saved into the previously mentioned new field in \textit{tcp\_out\_options} (line 11 in \ref{fullmesh}).
@@ -382,11 +382,7 @@ This preallocation solution would work just fine for digesting algorithms that d
 Also the pointer to this aligned placeholder is added to the \textit{mptcp\_hmacsha1\_pool} struct and retrieved in \textit{mptcp\_hmac\_sha1()} as shown in \ref{crypto}, line 15. 
 
 
-Despite all the precautions adopted in the process, using the Crypto library in the atomic context of the network stack is not a completely supported out-of-the-box and it is not advisable to deploy such solution. In order to compare our results and investigations with other current implementations, the code for SCTP in the Linux kernel has been inspected. In fact, SCTP uses the Crypto library to perform hashing operations that require the \textit{crypto\_hash\_setkey()} (\href{http://lxr.free-electrons.com/source/net/sctp/auth.c#L751}{href}), in the same context of our MPTCP case. To verify this, Linux kernel 4.1.0 has been compiled with the option \textit{CONFIG\_DEBUG\_ATOMIC\_SLEEP} enabled and a SCTP connection has been started. The afore-mentioned option would provide a warning if a function that might potentially sleep is called inside an atomic section. Indeed, the SCTP connectioned triggered such warning.
-An email has been sent to the official linux-crypto mailing-list for clarifications, and the issue with the current SCTP implementation has been acknowledged (\href{http://comments.gmane.org/gmane.linux.kernel.cryptoapi/17937}{href}).
-
-
-The investigation about the usage of the Crypto API in the MPTCP implementation stopped at this point, but the entire work and related patches have been made available for future references. If the Crypto framework is updated to work in atomic context, then its usage in MPTCP would be the most likely the best option. Another possibility is to study all the possible paths and functions that can be reached by the \textit{crypto\_hash\_setkey()} function to make sure that all the required memory allocations have been already taken care of before entering the atomic context in the network stack. For now, the separate function \textit{mptcp\_hmac\_sha1()} made available in MPTCP is considered the best solution.
+Despite all the precautions adopted in the process, using the Crypto library in the atomic context of the network stack is not a completely supported out-of-the-box and it is not advisable to deploy such solution. The investigation about the usage of the Crypto API in the MPTCP implementation stopped at this point, but the entire work and related patches have been made available for future references. If the Crypto framework is updated to work in atomic context, then its usage in MPTCP would be the most likely the best option. Another possibility is to study all the possible paths and functions that can be reached by the \textit{crypto\_hash\_setkey()} function to make sure that all the required memory allocations have been already taken care of before entering the atomic context in the network stack. For now, the separate function \textit{mptcp\_hmac\_sha1()} made available in MPTCP is considered the best solution.
 
 
 \subsection{Port advertisement}
@@ -479,16 +475,87 @@ next_phase_v4:
 	...
 \end{lstlisting}
 
-At line 9 there is the check regarding the presence of a valid port value in \textit{opts->add\_addr4.port}. This code will also add padding in case the port is written into the message. This solution have been adopted to test random, hardcoded ports in the address advertisement procedures of both ADD\_ADDR and ADD\_ADDR2, but it was not eventually merged into the official MPTCP implementation because of the added complexity that is not required at the moment, since no port is ever advertised in the current implementation.
+At line 9 there is the check regarding the presence of a valid port value in \textit{opts->add\_addr4.port}. This code will also add padding in case the port is written into the message. This solution have been adopted to test random, hardcoded ports in the address advertisement procedures of both ADD\_ADDR and ADD\_ADDR2, but it was not eventually merged into the official MPTCP implementation because of the added complexity that is not required at the moment, since no port is ever advertised with the current underlying code.
 
 
 \subsection{IPv6 considerations}
-Longer addresses brought some issues related to TCP option fields limitations.
+So far, all the code and examples have addressed the advertising of an IPv4 address. IPv6 support was eventually added, and from the code prospective it mainly copies the IPv4 counterpart, with proper modifications related to the new length of the address, that is now 16 bytes long. 
+
+
+The maximum size allowed for the TCP Options field is 40 bytes. The ADD\_ADDR2 option would add up to 30 bytes (32 bytes, if padding is added) when and IPv6 address is advertised with the port value.  Since it is very unlikely that such a long option would fit if other options are already present in the packet, the \rfc{6824bis-04} states that the ADD\_ADDR2 message should be sent in a duplicate ACK, with no other payload or option. 
+For example, in the testing scenario adopted for the thesis work, the Timestamp (12 bytes) and DSS (8 bytes) options were always present in the packet together with ADD\_ADDR(2), meaning that the ADD\_ADDR2 with IPv6 was never added to the packets due to the size limits. Indeed, adding the ADD\_ADDR(2) option in the outgoing packets is treated in the kernel as a best effort procedure, somehow differently from what it is suggested in the mentioned RFC document.
+
+Eventually, an intermediate approach has been adopted for the new ADD\_ADDR2 format: only if an IPv6 is advertised, then all the other MPTCP options in the packet are not added (regular TCP options are not affected). This is done in \textit{mptcp\_established\_options()} (file \textit{ net/mptcp/mptcp\_output.c}), by checking the version of the IP address, processing the ADD\_ADDR2 packet information for the outgoing packet, and then return in the IPv6 case, so that no other options are processed in the function (listing \ref{ipv6}).
+
+\begin{lstlisting}[language=c, caption=\textit{In IPv6 case, MPTCP options are not added if ADD\_ADDR2 is present}, label=ipv6]
+   ...
+   if (unlikely(mpcb->addr_signal) && mpcb->pm_ops->addr_signal) {
+      mpcb->pm_ops->addr_signal(sk, size, opts, skb);
+      if (opts->add_addr_v6)
+            /* Skip subsequent options */
+            return;
+   }
+   ...
+\end{lstlisting}
 
 
 \section{Other contributions}
-Another minor part of the thesis work on MPTCP is related to some small contributions to the official RFC documentation and other open-source projects.
+\label{otherc}
+\subsubsection{RFC6824}
+As a complementary part of the development process for the MPTCP implementation in the Linux Kernel, efforts have been placed to improve the official documentation counterpart for the protocol. In particular, a somewhat substantial modification have been proposed regarding the key adopted for the HMAC computation in ADD\_ADDR2. In \ref{6824bis-04} it is indicated to use the MPTCP session key of the sender as the only security material, but there is no valid reason not to adopt the sender's key concatenated with the receiver's key. In fact, when an ADD\_ADDR2 is issued the connection is already established, meaning that both hosts know both keys, and concatenating them for the HMAC hashing key improves security overall (an attacker has to know both keys to forge valid HMAC values). Moreover, from an implementation perspective, maintaining the same key configuration used in MP\_JOIN provides code re-usability for the MPTCP hashing function \textit{mptcp\_hmac\_sha1()}.
+These reasonings have been pointed out in the official IETF mailing-list and they have been positively reviewed [\href{https://mailarchive.ietf.org/arch/search/?email_list=multipathtcp&q=RFC6824bis-04+ADD_ADDR2+comments}{href}]: \rfc{6824bis-05}, released in January 2016, modifies the specifications for ADD\_ADDR2 so that both keys are used. For this reason it is acceptable to keep the \textit{no\_key} value in the code as a temporary (incorrect) implementation of \rfc{6824bis-04} standards, since it will be soon replaced with the key of the receiver (as mentioned in section \ref{hmacinaddaddr}. 
+In the same email has been pointed out that the port usage for the HMAC message definition is not very clear in \rfc{6824bis-04}. In fact, when no port is advertised it should be specified how to handle the HMAC generation, if to avoid the port value at all or to use it anyway with a value of 0. This point has indeed be clarified in the latest RFC draft, \rfc{6824bis-05}, opting for the second solution. The RFC section including the all these updated revisions is reported here:
+
+\begin{verbatim}
+   In the same way as for MP_JOIN, the key for the HMAC
+   algorithm, in the case of the message transmitted by Host A, will be
+   Key-A followed by Key-B, and in the case of Host B, Key-B followed by
+   Key-A.  These are the keys that were exchanged in the original
+   MP_CAPABLE handshake.  The message for the HMAC is the Address ID, IP
+   Address, and Port which precede the HMAC in the ADD_ADDR option.  If
+   the port is not present in the ADD_ADDR option, the HMAC message will
+   nevertheless include two octets of value zero.
+\end{verbatim}
+
+\subsubsection{RFC7430}
+A minor RFC Errata has been sent regarding the document 'Analysis of Residuals Threats and Possible Fixes for Multipath TCP (MPTCP)' (\rfc{7430}), since a wrong classification has been assigned to the SYN/JOIN attack in section 6. Such attack is not a \textit{partial-time on-path eavesdropper} but the type is \textit{partial-time on-path active attacker} [\href{http://www.rfc-editor.org/errata_search.php?rfc=7430&eid=4565}{href}].
+
+\subsubsection{Nimai Scapy tool}
+The Scapy tool with MPTCP support (found at \textit{https://github.com/nimai/mptcp-scapy}) that has been used to perform all the attacking tests have been slightly modified to make it compatible with the new format for ADD\_ADDR2. In this way it was possible to test the new packet format and verify the correct functioning of the implemented patches (as shown in the following section \ref{exp}, 'Experimental evaluation'). It was enough to add the new HMAC field in the class definition for the ADD\_ADDR messages, found in \textit{scapy/layers/mptcp.py}, as shown in listing \ref{scapy2} at lines 11 (option with no port field) and 23 (option with the port field).
+
+\begin{lstlisting}[language=c, caption=\textit{Scapy ADD\_ADDR2 class definition}, label=scapy2]
+   ...
+class MPTCP_AddAddr(MPOption):
+    name = "Multipath TCP Add Address"
+    subtype = 3
+    subsubtype = 8<<4+3
+    fields_desc = [ ByteField("length", 16),
+                    BitEnumField("subtype", 3, 4, MPTCP_subtypes),
+                    BitField("ipver", 4, 4),
+                    ByteField("address_id", 0),
+                    IPField("adv_addr", "0.0.0.0"),
+                    XLongField("snd_mac", 0),] #conditional length
+
+class MPTCP_AddAddrPort(MPOption):
+    name = "Multipath TCP Add Address"
+    subtype = 3
+    subsubtype = 10<<4+3
+    fields_desc = [ ByteField("length", 18),
+                    BitEnumField("subtype", 3, 4, MPTCP_subtypes),
+                    BitField("ipver", 4, 4),
+                    ByteField("address_id", 0),
+                    IPField("adv_addr", "0.0.0.0"),
+                    ShortField("port",0),
+                    XLongField("snd_mac", 0),] #conditional length
+   ...
+\end{lstlisting}
+
+\subsubsection{Wireshark}
+A fundamental tool used for the whole work about testing and developing MPTCP has been the widely popular open-source network packets analyzer Wireshark [\href{https://www.wireshark.org/}{href}]. The program provides MPTCP supports, but it couldn't recognize the new HMAC field in the ADD\_ADDR field during the development phase of such new feature. After the MPTCP code has been reviewed and merged, a small patch for Wireshark has been submitted in order to add support for ADD\_ADDR. This patch allows to show the actual HMAC field when inspecting an ADD\_ADDR2 message, instead of providing the 8 raw bytes as an unknown component of the packet. Moreover, it allows to filter the capture file based on the HMAC field in ADD\_ADDR2. The patch has been merged into the official Wireshark repository [\href{https://github.com/wireshark/wireshark/commit/98fd9b852446ada31d47c158e022c545d0bc7f42}{href}].
+
+\subsubsection{Linux SCTP}
+While investigating the usage of Crypto-APIs in MPTCP, it was decided to inspect how the framework is used in similar scenarios in the latest Linux Kernel. The SCTP protocol, already mentioned in the introductory sections for its similarities with MPTCP, does adopt the Crypto library to perform hashing operations that require the \textit{crypto\_hash\_setkey()} (\href{http://lxr.free-electrons.com/source/net/sctp/auth.c#L751}{href}), in the same atomic running 0context of the MPTCP case. To verify this, Linux kernel 4.1.0 has been compiled with the option \textit{CONFIG\_DEBUG\_ATOMIC\_SLEEP} enabled and a SCTP connection has been started. The afore-mentioned option would provide a warning if a function that might potentially sleep is called inside an atomic section. Indeed, the SCTP confectioned triggered such warning. An email has been sent to the official linux-crypto mailing-list for clarifications, and the issue with the current SCTP implementation has been acknowledged (\href{http://comments.gmane.org/gmane.linux.kernel.cryptoapi/17937}{href}).
 
 \section{Experimental evaluation}
-This part should include performance analysis regarding the new format introduced with ADD\_ADDR2. A discussion on how the new format (and all the other modifications introduced with the patches) could impact any aspect of the protocol should be present in this section.
-It is possible to add here the other possible solutions for ADD\_ADDR fix, and why they are not good enough. 
+\label{exp}
+
