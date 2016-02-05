@@ -727,4 +727,37 @@ def genhmac_addaddr2(k1, k2, r1, r2):
 \end{lstlisting}
 
 \subsubsection{ADD\_ADDR(2) flooding}
-A final performance evaluation has been executed on the new ADD\_ADDR2 format. 
+A final performance evaluation has been executed on the new ADD\_ADDR2 format. The newly introduced HMAC value in the ADD\_ADDR2 packet would trigger cryptographic computations at the receiver. Such computations are highly optimized for fast execution and reduced CPU utilization, but they might represent a problem if triggered at a high rate. 
+An example of the impact of the HMAC calculation over the overall MPTCP operations, it has been studied that this operation accounts for the 25\% of the overall CPU time spent in generating the SYN/ACK+MP\_JOIN packet [\href{http://inl.info.ucl.ac.be/system/files/phd-thesis_1.pdf}{href}].
+
+This attempt to overload a host's CPU is now enabled with ADD\_ADDR2, where an attacker can forge ADD\_ADDR2 messages with random HMAC and flood the target, so that the latter has to call the \textit{mptcp\_hmac\_sha1()} function repeatedly. Two new Scapy scripts have been developed to perform such flooding with both ADD\_ADDR[\href{https://github.com/fabriziodemaria/MPTCP-Exploit/tree/add-addr-flood}{href}] and ADD\_ADDR2[\href{https://github.com/fabriziodemaria/MPTCP-Exploit/tree/add-addr-2-flood}{href}] so that it is possible to compare the difference in CPU load. The main function of the script for the ADD\_ADDR2 flooding is reported in listing \ref{flood2}.
+
+\begin{lstlisting}[language=Python, caption=\textit{Scapy flooding tool}, label=flood2]
+def main():
+    args = parse_args()
+
+    ADVERTISED_IP = args.advertisedIP
+    CLIENT_IP = args.clientIP
+    SERVER_IP = args.serverIP
+    CLIENT_IF = args.clientIf
+    SERVER_IF = args.serverIf
+
+    pktl = sniff(iface=CLIENT_IF, lfilter=lambda p: filter_source(p, CLIENT_IP), count=1)
+
+    # Sending ADD_ADDR flood to client
+    addaddrlist = []
+    addaddrlist.append(forge_addaddr(ADVERTISED_IP, SERVER_IP, pktl[0][TCP].dport, CLIENT_IP, pktl[0][TCP].sport, (pktl[0][TCP].ack)+SEQUENCE_OFFSET, (pktl[0][TCP].seq)-SEQUENCE_OFFSET))
+    
+    for i in range (0, 1000):
+        addaddrlist.append(addaddrlist[0].copy())
+    for i in range (0, 10):
+        print "Sending 1000 ADD_ADDR2 to client"
+        send(addaddrlist, iface=CLIENT_IF, verbose=0)
+    return
+\end{lstlisting}
+
+The command used to call the script is identical to the one used in section [ref to attack reproduction], and it would trigger the sending of 10000 ADD\_ADDR2 packets with random HMAC value (not shown in the listing).
+
+A separate Python script has been developed together with gnuplot in order to track the local CPU usage of the client virtual machine process over time [\href{https://github.com/fabriziodemaria/CPU_Monitor}{href}]. The tool simply extract the CPU usage percentage from the command 'top'.
+The test involved a \textit{netcat} communication between the client and the server, so that the average CPU usage is almost 0\% when no message is being exchanged. During the flooding procedure, ADD\_ADDR environment produces an average CPU usage of 4\%; the ADD\_ADDR2 case shows an average CPU usage of 6\% instead. %Add details about the machine hardware. Also test it again with different number of addaddr sent. This value is somewhat compliant with the 25 percent previously mentioned. Also, add graphs.
+This experiment gives a rough estimation of the impact brought by the HMAC field in case of flooding attacks. The final data shows a limited increase in CPU overload, not pronounced enough to claim that the new format introduces a new attack vector.
