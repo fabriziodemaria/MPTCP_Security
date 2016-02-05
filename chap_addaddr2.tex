@@ -299,6 +299,8 @@ void mptcp_hmac_sha1(u8 *key_1, u8 *key_2,
 
 In this first section the \textit{input} array is prepared for the subsequent HMAC-SHA1 operations (not reported here). From line 13 to line 16 it is possible to verify that the 16 bytes' key is properly xored with the first 16 bytes of the array as required for the proper HMAC calculation. From line 18 to line 27 the "for" loop scans the function arguments by retrieving two subsequent argument at a time: the first is an integer representing the length of the currently processed message, while the second is the pointer to the actual message. After checking that the total length of the concatenated message is not too long, the message is properly parsed into the \textit{input} array, before advancing the index accordingly and start a new "for" loop. The last part of the code snippet shows some padding additions required by the hashing function. The new API indeed requires to pass along the following set of information, in this order: pointer to the first 8 bytes of the HMAC key, pointer to the following 8 bytes of the key, pointer to the 20-byte placeholder where to save the final result of the HMAC calculation, the number of HMAC message's parts that have to be processed and, finally, the pointers to the various components composing the final HMAC input message, where each pointer has to be preceded by an integer determining the byte-length of the subsequent message. Indeed, this how the function is used to calculate the HMAC value in listing \ref{fullmesh}.
 
+A few considerations should be made about the total length of the final HMAC input message. From the code it can be seen that the message shouldn't be longer than 62 bytes. This number comes from the limit value 125 (included) in line 26 minus the initial \textit{index} value of 64 in line 22. The limit value 125 has been chosen so that the first bit after the message is set to one (actually, the entire byte after the last byte of the message is set to 0x80), keeping the very last two fields in the \textit{input} array reserved to hold the length value composed as the sum of 512 (bits composing the first half of the input array) plus the number of bits composing the actual HMAC message. Such configuration is required by the following hashing implementation to work as expected. Actually, 62 bytes is a very conservative value for the message length in MPTCP. As of now, the longest possible message to be processed for ADD\_ADDR2 would be of length 19 bytes: 1 byte for the Address ID, 16 bytes for the IPv6 address and two more bytes for the port value.
+Moreover, it has been decided to introduce a BUG\_ON macro as a check for the message length, so that the whole system would crash reporting the needed trace information in case the message is indeed too long. Even if crashing the whole Kernel in case of a failure in MPTCP might seem a too drastic approach, the reasoning behind it is that such input messages does not depends on any external input: in other words, the number and length of the messages passed to the hashing function are hardcoded and within the limits, meaning that such BUG\_ON procedure will never be called during normal execution of the current code. Only new uses of the hashing function introduced by developers during development phase could introduce a wrong usage of the improved API. During the development phase it is indeed good to fail loudly if something goes wrong, providing all the means for the developers to notice and address the problem.
 
 Extending the hashing function used in MPTCP as just described has been the final solution adopted to implement ADD\_ADDR2. Nevertheless, another important investigation has been performed about an alternative way to achieve HMAC calculation within MPTCP. Such alternative takes into consideration the usage of the Crypto API framework that is already available in the Linux kernel. Code re-usability is indeed a fundamental aspect of Kernel development, and the Crypto module offers all the most popular block ciphers and hash functions computations, including the HMAC-SHA1. Such API has been introduced in the Linux kernel version 2.5.45 [\href{http://lwn.net/Articles/13587/}{href}], and it is now considered very stable and optimized for fast performances. 
 A patch to test the behavior of Crypto APIs in MPTCP has been developed [reference to the appendix] and tested. The \textit{mptcp\_hmac\_sha1()} function would be still extended to achieve better flexibility in managing the input messages, but it would end up being a simple wrapper calling the Crypto API functions, as shown in listing \ref{crypto}.
@@ -536,7 +538,7 @@ A minor RFC Errata has been sent regarding the document 'Analysis of Residuals T
 \subsubsection{Nimai Scapy tool}
 The Scapy tool with MPTCP support (found at \textit{https://github.com/nimai/mptcp-scapy}) that has been used to perform all the attacking tests have been slightly modified to make it compatible with the new format for ADD\_ADDR2. In this way it was possible to test the new packet format and verify the correct functioning of the implemented patches (as shown in the following section \ref{exp}, 'Experimental evaluation'). It was enough to add the new HMAC field in the class definition for the ADD\_ADDR messages, found in \textit{scapy/layers/mptcp.py}, as shown in listing \ref{scapy2} at lines 11 (option with no port field) and 23 (option with the port field).
 
-\begin{lstlisting}[language=c, caption=\textit{Scapy ADD\_ADDR2 class definition}, label=scapy2]
+\begin{lstlisting}[language=Python, caption=\textit{Scapy ADD\_ADDR2 class definition}, label=scapy2]
    ...
 class MPTCP_AddAddr(MPOption):
     name = "Multipath TCP Add Address"
@@ -571,4 +573,158 @@ While investigating the usage of Crypto-APIs in MPTCP, it was decided to inspect
 
 \section{Experimental evaluation}
 \label{exp}
+The first Scapy script developed to exploit the ADD\_ADDR vulnerability and reproduce the hijacking attack in a simulation environment can be considered part of the experimental evaluation for the this work. However, this section focuses on the evaluation of the final product of the development process, mainly investigating the security enhancements and related performance implications introduced with the new ADD\_ADDR2 format and the other related patches.
+Every single step of the process have been sided with experimental tests.
 
+\subsubsection{Version control}
+Regarding the MPTCP version control, since this aspect works in a similar manner independently from the subsequent number of subflows and interfaces configuration at the hosts, has been tested in a single network scenario (the one shown in section [add section of attack]). All the combinations of version agreement message exchange have been tested to make sure that version 1 is established only if available at both hosts. The sysctl used by the system administrator has been constrained to accept only 0 or 1 values, for the moment. Moreover, tests have been setup to make sure that the version chosen for the very first MP\_CAPABLE packet is not changed upon retransmission. As explained in section [], in order to cope with this case, the sysctl value is read early on during connection instantiation and saved inside the \textit{tcp\_sock} data structure for the whole connection duration. In order to make sure this solution works as expected, proper iptables rules have been set at localhost to drop the SYN/ACK packets from the server, thus triggering the SYN retransmission at the client: 
+
+\begin{verbatim}
+sudo iptables -I FORWARD -p tcp --tcp-flags ALL SYN,ACK -j DROP
+\end{verbatim}
+
+During the retransmission time, the sysctl command has been called to change the MPTCP version number, and it was indeed verified that this modification didn't apply to the retransmitted packets, appearing only upon th creation of a new MPTCP connection. 
+Another test related to the MPTCP version control was to establish a communication between two host having installed two different kernel images, one with the MPTCP version control in place, and the second one with the older code that simply advertise version 0 and does not support ADD\_ADDR2. Interoperability has been confirmed, since the version agreement settles to 0 and the older version of ADD\_ADDR is used by both counterparts.
+
+\subsubsection{Hashing function}
+The modifications to the \textit{mptcp\_hmac\_sha1()} function required a deep understanding and evaluation of the values produced by the HMAC-SHA1 algorithm. At first, to make sure that the enhanced version of the function was indeed working as expected, MPTCP sessions have been established with older version of the MPTCP kernel to verify that the HMAC values were exchanged and verified properly. Later, the OpenSSL tool have been used to calculate the HMAC value of any input key and message in hex format, in order to have a reference comparison tool to verify that the HMAC operation works as expected. Such tool is used in with the following command, with <hex message> and <hex key> to be replaced with the desired strings:
+
+\begin{verbatim}
+echo -n ‘<hex message>’ | xxd -r -p | \
+openssl dgst -sha1 -mac HMAC -macopt hexkey:<hex key>
+\end{verbatim}
+ 
+\subsubsection{ADD\_ADDR2 operations}
+After having evaluated that both the newly introduced version control and the extended hashing functions work as expected, the next important step regards the tests on the new ADD\_ADDR2 format. The new option have been tested in different configurations, mainly derived from the set of combinations of the following parameters:
+\begin{itemize}
+  \item Number of interfaces at the client and at the server (one or two);
+  \item IP version in use (IPv4 or IPv6);
+  \item Port advertisement in ADD\_ADDR2 (present or not present).
+\end{itemize}
+
+All the resulting scenarios have been tested during the development process. For the port advertisement checks, a random port value was inserted in the packets by using the experimental code as reported in section [ref to port adv]. 
+The IPv4 testing involved configurations similar to the model shown in listing \ref{clientconf}. It is fairly straightforward to modify the \textit{client.sh} and \textit{server.sh} scripts mentioned in the attack execution section in order to attach two taps to the server and only one to the client, thus providing a new, more interesting scenario to test ADD\_ADDR2. In fact, if a client has two interfaces, not only it advertises the second one using ADD\_ADDR(2), but it also soon after instantiate the new subflow with the server independently from the server's reaction to the received ADD\_ADDR(2) option: in the Linux kernel implementation, the server would not start the creation of the subflow anyway. 
+By providing the server with two interface it is possible to actually trigger subflow establishment at the client exclusively thanks to the received ADD\_ADDR(2) from the server.
+In setting the new scenario, in which the client has single interface and the server has two interfaces, not only the tap attached to the virtual machines has to be rearranged, but also the interface configuration within the virtual machines has to be modified to set the proper IP addresses, as shown in figure \ref{network2}.
+
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=\textwidth]{images/Network_Scenario_2}
+\caption{Network scenario, client one interface and server two interfaces (IPv4)}
+\label{fig:network2}
+\end{figure} 
+
+
+The Ubuntu network configuration file in \textit{/etc/network/interfaces} for the server in this new scenario is reported here:
+
+\begin{verbatim}
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet static
+        address 10.2.1.2/24
+        netmask 255.255.255.0
+        gateway 10.2.1.1
+
+auto eth1
+iface eth1 inet static
+        address 10.2.2.2/24
+        netmask 255.255.255.0
+        gateway 10.2.2.1
+\end{verbatim}
+
+Moreover, proper ip route configurations have been set to direct the packet flows to the right gateways, as shown in the following extract from \textit{ip route} at the server:
+
+\begin{verbatim}
+10.2.1.0/24 dev eth0  proto kernel  scope link  src 10.2.1.2 
+10.2.2.0/24 dev eth1  proto kernel  scope link  src 10.2.2.2 
+\end{verbatim}
+ 
+The IPv6 configuration required more complex changes to the configuration files and scripts. The new \textit{client.sh} for the IPv6 scenario is reported in listing \ref{clientsh6}.
+
+
+\begin{lstlisting}[language=bash, caption=\textit{client.sh for IPv6 setup}, label=clientsh6]
+#!/bin/bash
+
+USER=`whoami`
+
+sudo tunctl -u $USER -t tap0
+sudo tunctl -u $USER -t tap1
+
+sudo ifconfig tap0 inet6 add 1000:1:1::1/64 up
+sudo ifconfig tap1 inet6 add 1000:1:2::1/64 up
+
+sudo sysctl -w net.ipv6.conf.all.forwarding=1
+sudo ip6tables -t nat -A POSTROUTING -s 1000::0/8 ! -d 1000::0/8 -j MASQUERADE
+
+sudo chmod 666 /dev/net/tun
+
+./vmlinux ubda=fs_client mem=256M umid=umlA eth0=tuntap,tap0 eth1=tuntap,tap1
+
+sudo tunctl -d tap0
+sudo tunctl -d tap1
+
+sudo ip6tables -t nat -D POSTROUTING -s 1000::0/8 ! -d 1000::0/8 -j MASQUERADE
+\end{lstlisting}
+
+The previous script is associated with the following network configuration inside the client UML machine:
+
+\begin{verbatim}
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet6 static
+	address 1000:1:1::2
+	netmask 64
+	gateway 1000:1:1::1
+
+auto eth1
+iface eth1 inet6 static
+	address 1000:1:2::2
+	netmask 64
+	gateway 1000:1:2::1
+\end{verbatim}
+
+Appropriate route rules have been also set to achieve the desired flow redirection through the appropriate tap interfaces. Eventually, the IPv6 scenario involving a client with two interfaces and a server with a single interface is represented in figure \ref{fig:netip6_1}.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=\textwidth]{images/Network_Scenario_6_1}
+\caption{Network scenario, client two interfaces and server one interface (IPv6)}
+\label{fig:netip6_1}
+\end{figure} 
+
+Finally, a second setup for IPv6 have been set, involving a client with a single interface and a server with two interfaces (omitted here).
+
+A single test result is reported in this paper, in appendix [add..], showing the capture file's content of an MPTCP connection involving the new ADD\_ADDR2 option sent from a server with two IPv4 interfaces to a client with a single IPv4 interface.
+
+\subsubsection{ADD\_ADDR2 and keys' eavesdrop}
+After having tested the proper functioning of the new MPTCP implementation, it has been exposed to the same attacking tool used to exploit the old ADD\_ADDR vulnerability [section of the attacking tool]. As expected, when the host using MPTCP version 1 receives the ADD\_ADDR message without the truncated HMAC field, it simply discard such packet and no subflow is triggered, thus making the connection hijack impossible [appendix to capture file].
+The similar result is achieved by sending an ADD\_ADDR2 packet with random truncated HMAC, thus proving the HMAC verification process works as expected [appendix with capture file].
+As a further evaluation of the new format, a modified version of the attacking script has been developed to eavesdrop the initial MPTCP keys exchanged in the MP\_CAPABLE options, thus being able to calculate the correct HMAC for ADD\_ADDR2 and still be able to carry out the connection hijack even towards the updated MPTCP implementation [\href{https://github.com/fabriziodemaria/MPTCP-Exploit/tree/add-addr2-eav}{href}]. It is important to remind that such attack requires the attacker to be partially on-path eavesdropper to retrieve the above mentioned keys, which constitutes an important limitation for the attack, that is currently considered acceptable (see section about keys' eavesdrop...). Nevertheless, it is interesting to show the feasibility of this new kind of attack towards ADD\_ADDR2. The new Scapy script, acting in the same network configuration of section [attack section], sniffs the keys in the SYN/ACK+MP\_CAPABLE option sent by the server to the client. Later, it forges it uses the cryptographic function in listing \ref{pycrypto} to calculate the right HMAC value and adds its truncated version to the outgoing packet using the modified Scapy class for ADD\_ADDR2 shown in listing \ref{scapy2}. In this case, as expected, the hijacking attack is still possible [appendix].
+
+\begin{lstlisting}[language=Python, caption=\textit{HMAC calculation in Python}, label=pycrypto]
+...
+def genhmac_addaddr2(k1, k2, r1, r2):
+    """Returns a HMAC-SHA1 with the concatenation of k1 and k2
+    as key and the concatenation of r1 and r2 as message.
+    k1, k2 are 64bits integers
+    r1, r2 are 8bits and 32bits integers, respectively
+    Return a 160bits integer
+    """
+    import hashlib
+    import hmac
+    import math
+
+    key = xstr(k1).rjust(8,'\00') + xstr(k2).rjust(8,'\00')
+    msg = xstr(r2).rjust(1,'\00') + xstr(r1).rjust(4,'\00')
+    ...
+    return xlong(hmac.new(key, msg=msg, digestmod=hashlib.sha1).digest())
+...
+\end{lstlisting}
+
+\subsubsection{ADD\_ADDR(2) flooding}
+A final performance evaluation has been executed on the new ADD\_ADDR2 format. 
