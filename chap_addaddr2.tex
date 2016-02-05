@@ -499,10 +499,23 @@ Eventually, an intermediate approach has been adopted for the new ADD\_ADDR2 for
 \end{lstlisting}
 
 
-\section{Other contributions}
+\section{Overall contributions}
 \label{otherc}
+
+\subsubsection{MPTCP Linux implementation}
+The previous sections described the development process for ADD\_ADDR2 and the related aspects regarding MPTCP version control and the extension of the HMAC-SHA1 function used in MPTCP. 
+The overall code has been submitted into four different patches:
+\begin{itemize}
+  \item mptcp: Add MPTCP version control [\href{https://github.com/multipath-tcp/mptcp/commit/c9b4b66a0e544b3eae5d898206b5a28628b728a7}{href}];
+  \item mptcp: Make 'mptcp\_hmac\_sha1' more flexible [\href{https://github.com/multipath-tcp/mptcp/commit/f860de960e19cb557400c08e49288af63c51319f}{href}];
+  \item mptcp: Add ADD\_ADDR2 option [\href{https://github.com/multipath-tcp/mptcp/commit/de09a83186666c67c9831057a83ba426f91fbea3}{href}];
+  \item mptcp: Add IPv6 support for ADD\_ADDR2 [\href{https://github.com/multipath-tcp/mptcp/commit/8e86cf262108513296ac0952f2ffef717dc12f4b}{href}].
+\end{itemize}
+
+The first implementation of ADD\_ADDR2 for MPTCP has been also mentioned in the official MPTCP [\href{http://blog.multipath-tcp.org/blog/html/2016/01/05/mptcpnews.html#}{href}].
+
 \subsubsection{RFC6824}
-As a complementary part of the development process for the MPTCP implementation in the Linux Kernel, efforts have been placed to improve the official documentation counterpart for the protocol. In particular, a somewhat substantial modification have been proposed regarding the key adopted for the HMAC computation in ADD\_ADDR2. In \ref{6824bis-04} it is indicated to use the MPTCP session key of the sender as the only security material, but there is no valid reason not to adopt the sender's key concatenated with the receiver's key. In fact, when an ADD\_ADDR2 is issued the connection is already established, meaning that both hosts know both keys, and concatenating them for the HMAC hashing key improves security overall (an attacker has to know both keys to forge valid HMAC values). Moreover, from an implementation perspective, maintaining the same key configuration used in MP\_JOIN provides code re-usability for the MPTCP hashing function \textit{mptcp\_hmac\_sha1()}.
+As a complementary part of the development process for the MPTCP implementation in the Linux Kernel, efforts have been placed to improve the official documentation counterpart for the protocol. In particular, a somewhat substantial modification have been proposed regarding the key adopted for the HMAC computation in ADD\_ADDR2. In \rfc{6824bis-04} it is indicated to use the MPTCP session key of the sender as the only security material, but there is no valid reason not to adopt the sender's key concatenated with the receiver's key. In fact, when an ADD\_ADDR2 is issued the connection is already established, meaning that both hosts know both keys, and concatenating them for the HMAC hashing key improves security overall (an attacker has to know both keys to forge valid HMAC values). Moreover, from an implementation perspective, maintaining the same key configuration used in MP\_JOIN provides code re-usability for the MPTCP hashing function \textit{mptcp\_hmac\_sha1()}.
 These reasonings have been pointed out in the official IETF mailing-list and they have been positively reviewed [\href{https://mailarchive.ietf.org/arch/search/?email_list=multipathtcp&q=RFC6824bis-04+ADD_ADDR2+comments}{href}]: \rfc{6824bis-05}, released in January 2016, modifies the specifications for ADD\_ADDR2 so that both keys are used. For this reason it is acceptable to keep the \textit{no\_key} value in the code as a temporary (incorrect) implementation of \rfc{6824bis-04} standards, since it will be soon replaced with the key of the receiver (as mentioned in section \ref{hmacinaddaddr}. 
 In the same email has been pointed out that the port usage for the HMAC message definition is not very clear in \rfc{6824bis-04}. In fact, when no port is advertised it should be specified how to handle the HMAC generation, if to avoid the port value at all or to use it anyway with a value of 0. This point has indeed be clarified in the latest RFC draft, \rfc{6824bis-05}, opting for the second solution. The RFC section including the all these updated revisions is reported here:
 
