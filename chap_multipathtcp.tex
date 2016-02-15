@@ -20,7 +20,7 @@ As noted above, all TCP functionalities are made possible by processing the bits
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.75\textwidth]{images/tcp_header}
+\includegraphics[width=0.8\textwidth]{images/tcp_header}
 \caption{The TCP header format}
 \label{fig:tcp_header}
 \end{figure}
@@ -30,6 +30,7 @@ A component of the TCP header that is fundamental for MPTCP is the \textit{Optio
 Regarding the basic operation of regular TCP, a connection is divided into three steps: \textit{connection establishment}, \textit{data transfer} and \textit{connection release}. Different fields in the TCP header are used for the different phases of the connection.
 
 \subsubsection{Connection enstablishment}
+
 During the connection establishment, a  three-way handshake is performed between the client and the server: the client sends a SYN packet to the port on which the server is listening; after that, the server answers with a SYN/ACK packet to acknowledge the connection request; as a third and final step, the client acknowledge the SYN/ACK packet by sending to the server an ACK packet. The three phases of this procedure justify the name "three-way handshake". In order to define the kind of TCP segment received, single-bit fields in the TCP header are used (for example, SYN and ACK flags are shown in figure \ref{fig:tcp_header}). 
 The three-way handshake is important for various reasons: first of of all, both hosts declare their willingness to open the TCP connection using the addresses and ports indicated in the packets: the \textit{Source Port} and \textit{Destination Port}, together with the source and destination IP addresses provided in the IP header (not shown in figure \ref{fig:tcp_header}), are the means for identifying the two endpoints of the TCP connection. These fixed fields clearly shows the single-path fundamental design of TCP. 
 Moreover, during the initial handshake both client and server declare the supported \textit{Options} and agree on the initial \textit{Sequence Number} values to be used for both directions of the connection.
@@ -93,7 +94,7 @@ All the MPTCP functions are implemented internally inside the specific operating
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.75\textwidth]{images/MPTCP_options}
+\includegraphics[width=\textwidth]{images/MPTCP_options}
 \caption{The set of MPTCP options [RFC-6824]}
 \label{fig:MPTCP_options}
 \end{figure}
