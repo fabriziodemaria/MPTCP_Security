@@ -74,16 +74,14 @@ This technique allows to authenticate end hosts without the need to exchange key
   The main issues with this operation is that, once H[n-1] is sent by host A, it cannot be reused, since this might have been eavesdropped, leading to a situation not dissimilar to the original problem. With key chains, hosts would continue scaling down the chain, meaning that a second authentication would require host A to send H[n-2] (of course, host A can calculate any value in the chain since it knows the original seed), and host B must have saved previously acknowledged H[n-1] to verify that H[H[n-1]] equals the received H[n-2] value.
   The main issue with this solution is that the value 'n' will eventually reach 0, meaning that host A needs to compute a new hash chain from a new seed and also signal host B about this operation, thus requiring the definition of a new MPTCP option containing the final entry of the old chain (for authentication purposes) and the first entry of the new chain.
   Another direct consequence of such solution is that hash chains would add computational complexity to MPTCP operations, despite it being still reasonably acceptable.
-  An unverified proposal for the new message exchange using hash chain can be found on the IETF mailing list, and it is shown in figure \ref{fig:hashchain} [\href{https://www.ietf.org/mail-archive/web/multipathtcp/current/msg01275.html}{href}].
-  
-\begin{figure}[!htb]
-\centering
-\includegraphics[width=0.75\textwidth]{images/hashchain}
-\caption{Hash chain message exchange proposal}
-\label{fig:hashchain}
-\end{figure}
-  
-The first two messages for the MP\_JOIN operation are used for authentication purposes (the hash chain values are transmitted there), but the last two messages operate in a similar fashion with respect to the current MPTCP solution, using an HMAC whose key depends on the original keys exchanged via the MP\_CAPABLE option. In this way, eavesdropping the original keys is not enough to operate on the connection, but knowing the original keys is still required to validate subflows' creation.
+  An unverified proposal for the new message exchange using hash chain can be found on the IETF mailing list [\href{https://www.ietf.org/mail-archive/web/multipathtcp/current/msg01275.html}{href}].
+%\begin{figure}[!htb]
+%\centering
+%\includegraphics[width=0.75\textwidth]{images/hashchain}
+%\caption{Hash chain message exchange proposal}
+%\label{fig:hashchain}
+%\end{figure}
+In this proposal, four MP\_JOIN messages are exchanged in total: the first two messages are used for authentication purposes (the hash chain values are transmitted there together with the required tokens), but the last two messages operate in a similar fashion with respect to the current MPTCP solution, carrying an HMAC value whose key depends on the original keys exchanged via the MP\_CAPABLE option. In this way, eavesdropping the original keys is not enough to operate on the connection, but knowing the original keys is still required to validate subflows' creation.
 
 \subsubsection{SSL/TLS and SSH}
 Another well rated proposal to solve the keys' eavesdrop threat is to use application-layer protocols like SSL/TLS or SSH to negotiate a shared key between the end-points. For example, SSL/TLS already provides a mechanism to negotiate shared secret by using a Diffie-Hellman algorithm [\href{https://wiki.openssl.org/index.php/Diffie_Hellman#Diffie-Hellman_in_SSL.2FTLS}{href}].
@@ -120,7 +118,7 @@ Let's consider a scenario in which two machines, host A and host B, are communic
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=\textwidth]{images/Attack1}
+\includegraphics[width=0.8\textwidth]{images/Attack1}
 \caption{Attack scenario}
 \label{fig:attack1}
 \end{figure}

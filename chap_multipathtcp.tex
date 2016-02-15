@@ -20,7 +20,7 @@ As noted above, all TCP functionalities are made possible by processing the bits
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.8\textwidth]{images/tcp_header}
+\includegraphics[width=0.9\textwidth]{images/tcp_header}
 \caption{The TCP header format}
 \label{fig:tcp_header}
 \end{figure}
@@ -30,10 +30,7 @@ A component of the TCP header that is fundamental for MPTCP is the \textit{Optio
 Regarding the basic operation of regular TCP, a connection is divided into three steps: \textit{connection establishment}, \textit{data transfer} and \textit{connection release}. Different fields in the TCP header are used for the different phases of the connection.
 
 \subsubsection{Connection enstablishment}
-
-During the connection establishment, a  three-way handshake is performed between the client and the server: the client sends a SYN packet to the port on which the server is listening; after that, the server answers with a SYN/ACK packet to acknowledge the connection request; as a third and final step, the client acknowledge the SYN/ACK packet by sending to the server an ACK packet. The three phases of this procedure justify the name "three-way handshake". In order to define the kind of TCP segment received, single-bit fields in the TCP header are used (for example, SYN and ACK flags are shown in figure \ref{fig:tcp_header}). 
-The three-way handshake is important for various reasons: first of of all, both hosts declare their willingness to open the TCP connection using the addresses and ports indicated in the packets: the \textit{Source Port} and \textit{Destination Port}, together with the source and destination IP addresses provided in the IP header (not shown in figure \ref{fig:tcp_header}), are the means for identifying the two endpoints of the TCP connection. These fixed fields clearly shows the single-path fundamental design of TCP. 
-Moreover, during the initial handshake both client and server declare the supported \textit{Options} and agree on the initial \textit{Sequence Number} values to be used for both directions of the connection.
+During the connection establishment, a  three-way handshake is performed between the client and the server: the client sends a SYN packet to the port on which the server is listening; after that, the server answers with a SYN/ACK packet to acknowledge the connection request; as a third and final step, the client acknowledge the SYN/ACK packet by sending to the server an ACK packet. 
 
 \begin{figure}[!htb]
 \centering
@@ -41,6 +38,10 @@ Moreover, during the initial handshake both client and server declare the suppor
 \caption{Basic TCP three-way handshake procedure}
 \label{fig:tcphandshake}
 \end{figure}
+
+The three phases of this procedure justify the name "three-way handshake". In order to define the kind of TCP segment received, single-bit fields in the TCP header are used (for example, SYN and ACK flags are shown in figure \ref{fig:tcp_header}). 
+The three-way handshake is important for various reasons: first of of all, both hosts declare their willingness to open the TCP connection using the addresses and ports indicated in the packets: the \textit{Source Port} and \textit{Destination Port}, together with the source and destination IP addresses provided in the IP header (not shown in figure \ref{fig:tcp_header}), are the means for identifying the two endpoints of the TCP connection. These fixed fields clearly shows the single-path fundamental design of TCP. 
+Moreover, during the initial handshake both client and server declare the supported \textit{Options} and agree on the initial \textit{Sequence Number} values to be used for both directions of the connection.
 
 \subsubsection{Data transfer}
 TCP splits the payload into multiple packets that are independently routed in the network and it is possible that they arrive at destination unordered, or that some of them are lost on the way. TCP is a protocol that offers bidirectional communication, so that the the receiver can communicate to the sender information for data transfer control. \textit{Sequence Number} and \textit{Acknowledgment Number} in the TCP header are used to number each transferred octet in the payload, so that the receiver can reorder them and acknowledge them in a cumulative way: by acknowledging sequence number X to the sender, the receiver is signaling that all packets up to but not including X have been received. This system, together with timeouts and sliding window mechanisms, allows for retransmission of lost packets, too. There is a flag bit in the header that is used to determine if a TCP segment is an ACK segment (also used during the initial handshake), meaning that the \textit{Acknowledgment Number} field in the current packet indeed represents the next \textit{Sequence Number} that the receiver is expecting. 
@@ -94,7 +95,7 @@ All the MPTCP functions are implemented internally inside the specific operating
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=\textwidth]{images/MPTCP_options}
+\includegraphics[width=0.85\textwidth]{images/MPTCP_options}
 \caption{The set of MPTCP options [RFC-6824]}
 \label{fig:MPTCP_options}
 \end{figure}
@@ -103,8 +104,7 @@ All the MPTCP functions are implemented internally inside the specific operating
 The control plane for MPTCP takes into consideration all the options used in MPTCP to handle connection initiation, addition and removal of subflows, priority assignment to specific subflows, error handling via 'fallback' mechanism. These options are reported in the following subsections, adopting as reference documentation the \rfc{6824}.
 
 \subsubsection{MP\_CAPABLE}
-The connection initiation of an MPTCP connection is very similar to the standard TCP initial three-way handshake, involving a SYN, SYN/ACK and ACK exchange on a single path between host A and host B. In a regular TCP connection establishment these three packets are used to guarantee that both hosts have agreed on starting a TCP connection and also to exchange the two random initial sequence numbers that will be used to acknowledge data delivery for the two directions of the connection. Despite working as regular TCP, if MPTCP is enabled the SYN packet from host A will have a MP\_CAPABLE option in the \textit{Options} field of the TCP header. If the receiver host B is not MPTCP-compatible it will simply discard the MP\_CAPABLE option and proceeds instantiating a regular TCP connection.
-In case both hosts are MPTCP-compatible, the MP\_CAPABLE option is inserted in the three packets of the initial handshake for two purposes: advertising that both hosts are indeed MPTCP-compatible and exchanging two 64-bit keys (Key-A and Key-B), according to the scheme in figure \ref{fig:mpcapable}.
+The connection initiation of an MPTCP connection is very similar to the standard TCP initial three-way handshake, involving a SYN, SYN/ACK and ACK exchange on a single path between host A and host B. 
 
 \begin{figure}[!htb]
 \centering
@@ -113,41 +113,47 @@ In case both hosts are MPTCP-compatible, the MP\_CAPABLE option is inserted in t
 \label{fig:mpcapable}
 \end{figure}
 
-These keys are sent in clear inside the MP\_CAPABLE option only during the initial handshake (and in the case of MP\_FASTCLOSE) and their purpose is to identify a specific MPTCP connection within a host (useful when associating a new subflow to an existing MPTCP connection, for example) and to provide shared security material that is used in MPTCP for authorization mechanisms (more on this later in this section). The \textit{Option} field in the TCP header can only be 40 bytes long, and it is not reserved for MPTCP options only. For this reason it is of primary importance to keep the amount of MPTCP related information as low as possible. In fact, the original 64-bit keys are exchanged only during initial handshake; subsequently, shorter 32-bit tokens (Token-A and Token-B) derived from such keys using a digest algorithm will be used to address a specific MPTCP connection, even if this procedure requires additional checks in case of collisions with other tokens already assigned to other MPTCP connections in the same machine (despite this being a very remote possibility). There is another fundamental motivation for using this mechanism of shorter tokens: the full keys, that represent security material used in the protocol for authentication purposes (for example in MP\_JOIN and ADD\_ADDR2 messages), are exposed only during connection setup in the MP\_CAPABLE messages; sending the full keys each time a new subflow has to be started would diminish the overall security of the protocol. Therefore, an implementation requires a mapping from each token to the corresponding connection, and in turn to the keys for the connection.
-
-Regarding the hashing algorithm used to produce the tokens, this can be negotiated by using a portion of the flag bits inside the MP\_CAPABLE option. In this paper, the SHA1 (and HMAC-SHA1 in case a key element is needed) is considered as the algorithm in use for the connections [ref to SHA1]. Note that the SHA1 algorithm produces a 160-bit resulting value, that might be then truncated to its leftmost 32 or 64 bits according to the different cases in the MPTCP operations, in order to fit in the \textit{Options} field in the TCP header.
+In a regular TCP connection establishment these three packets are used to guarantee that both hosts have agreed on starting a TCP connection and also to exchange the two random initial sequence numbers that will be used to acknowledge data delivery for the two directions of the connection. Despite working as regular TCP, if MPTCP is enabled the SYN packet from host A will have a MP\_CAPABLE option in the \textit{Options} field of the TCP header. If the receiver host B is not MPTCP-compatible it will simply discard the MP\_CAPABLE option and proceeds instantiating a regular TCP connection.
+In case both hosts are MPTCP-compatible, the MP\_CAPABLE option is inserted in the three packets of the initial handshake for two purposes: advertising that both hosts are indeed MPTCP-compatible and exchanging two 64-bit keys (Key-A and Key-B), according to the scheme in figure \ref{fig:mpcapable}.
+These keys are sent in clear inside the MP\_CAPABLE option only during the initial handshake (and in the case of MP\_FASTCLOSE) and their purpose is to identify a specific MPTCP connection within a host (useful when associating a new subflow to an existing MPTCP connection, for example) and to provide shared security material that is used in MPTCP for authorization mechanisms (more on this later in this section). 
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.75\textwidth]{images/opt_capable}
+\includegraphics[width=0.85\textwidth]{images/opt_capable}
 \caption{MP\_CAPABLE option}
 \label{fig:opt_capable}
 \end{figure}
 
+The \textit{Option} field in the TCP header can only be 40 bytes long, and it is not reserved for MPTCP options only. For this reason it is of primary importance to keep the amount of MPTCP related information as low as possible. In fact, the original 64-bit keys are exchanged only during initial handshake; subsequently, shorter 32-bit tokens (Token-A and Token-B) derived from such keys using a digest algorithm will be used to address a specific MPTCP connection, even if this procedure requires additional checks in case of collisions with other tokens already assigned to other MPTCP connections in the same machine (despite this being a very remote possibility). There is another fundamental motivation for using this mechanism of shorter tokens: the full keys, that represent security material used in the protocol for authentication purposes (for example in MP\_JOIN and ADD\_ADDR2 messages), are exposed only during connection setup in the MP\_CAPABLE messages; sending the full keys each time a new subflow has to be started would diminish the overall security of the protocol. Therefore, an implementation requires a mapping from each token to the corresponding connection, and in turn to the keys for the connection.
+Regarding the hashing algorithm used to produce the tokens, this can be negotiated by using a portion of the flag bits inside the MP\_CAPABLE option. In this paper, the SHA1 (and HMAC-SHA1 in case a key element is needed) is considered as the algorithm in use for the connections [ref to SHA1]. Note that the SHA1 algorithm produces a 160-bit resulting value, that might be then truncated to its leftmost 32 or 64 bits according to the different cases in the MPTCP operations, in order to fit in the \textit{Options} field in the TCP header.
+
+
 \subsubsection{MP\_JOIN}
 Suppose that after the first subflow is operational host A initiates a new subflow between one of its addresses and one of host B's addresses. Host A sends a TCP SYN packet to host B containing the MP\_JOIN option, which includes Token-B (the token derived from B's key) and a nonce value used to prevent replay attacks. An additional field in the MP\_JOIN option is called address ID, an identifier for the original addresses in use within a specific MPTCP connection. This additional value allows to refer to a certain address without the need to use the plain IP addresses value as identifier, which is very useful when middleboxes like NATs alter the IP header during the transit of the packets.
-At the lower layers of the network, the SYN packet sent in this way looks like a legitimate request from host A to initiate a new TCP connection with host B, being the SYN packet the first of the regular TCP initial handshake. Host B processes such packet as a new MPTCP subflow request, and it uses the Token-B in the option to associate the request to the specific ongoing MPTCP connection with host A.
-
-The handshake flow for MP\_JOIN includes HMAC values for authentication purposes, and it is structured as follow:
+At the lower layers of the network, the SYN packet sent in this way looks like a legitimate request from host A to initiate a new TCP connection with host B, being the SYN packet the first of the regular TCP initial handshake. Host B processes such packet as a new MPTCP subflow request, and it uses the Token-B in the option to associate the request to the specific ongoing MPTCP connection with host A. The handshake flow for MP\_JOIN includes HMAC values for authentication purposes, and it is structured as follow:
 \begin{itemize}
   \item Token-B is added in the SYN packet from host A to host B in order to address a specific MPTCP connection; a random nonce (R-A) is also sent along;
-  \begin{figure}[!htb]
+  
+\begin{figure}[!htb]
 \centering
-\includegraphics[width=0.75\textwidth]{images/opt_join1}
+\includegraphics[width=0.85\textwidth]{images/opt_join1}
 \caption{MP\_JOIN option - SYN}
 \label{fig:opt_join1}
 \end{figure}
+
   \item Host B processes the request and sends back a truncated HMAC value calculated by using as \textit{key} the concatenation of Key-B followed by Key-A, and as the \textit{message} the concatenation of a new nonce generated at host B (R-B) and the one received from host A (R-A). R-B is also added to the option in a separate field, since it is needed by host A in the next step;
+  
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.75\textwidth]{images/opt_join2}
+\includegraphics[width=0.85\textwidth]{images/opt_join2}
 \caption{MP\_JOIN option - SYN/ACK}
 \label{fig:opt_join2}
 \end{figure}
+
   \item The last ACK form host A to host B contains the HMAC calculated using as key the concatenation of Key-A and Key-B, and as message the concatenation R-A and R-B. This time, the HMAC value is sent in its full length (160-bit).
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.75\textwidth]{images/opt_join3}
+\includegraphics[width=0.85\textwidth]{images/opt_join3}
 \caption{MP\_JOIN option - ACK}
 \label{fig:opt_join3}
 \end{figure}
@@ -175,7 +181,7 @@ The content of the ADD\_ADDR option is shown in figure \ref{fig:addaddropt}. The
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.75\textwidth]{images/addaddropt}
+\includegraphics[width=0.85\textwidth]{images/addaddropt}
 \caption{ADD\_ADDR option}
 \label{fig:addaddropt}
 \end{figure}
@@ -187,7 +193,7 @@ A subflow that is working properly must not use this option to close the connect
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.75\textwidth]{images/opt_remove}
+\includegraphics[width=0.85\textwidth]{images/opt_remove}
 \caption{REMOVE\_ADDR option}
 \label{fig:opt_remove}
 \end{figure}
@@ -199,7 +205,7 @@ This option can be sent by host A to trigger MPTCP closure at host B. In this ca
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.75\textwidth]{images/opt_fastclose}
+\includegraphics[width=0.85\textwidth]{images/opt_fastclose}
 \caption{MP\_FASTCLOSE option}
 \label{fig:opt_fastclose}
 \end{figure}
@@ -211,7 +217,7 @@ The fallback procedure can be required at any point during the connection if a m
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.75\textwidth]{images/opt_fail}
+\includegraphics[width=0.85\textwidth]{images/opt_fail}
 \caption{MP\_FAIL option}
 \label{fig:opt_fail}
 \end{figure}
@@ -221,7 +227,7 @@ It is possible to indicate if a path has to be used regularly or just as backup 
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.75\textwidth]{images/opt_prio}
+\includegraphics[width=0.85\textwidth]{images/opt_prio}
 \caption{MP\_PRIO option}
 \label{fig:opt_prio}
 \end{figure}
