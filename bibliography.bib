@@ -47,6 +47,14 @@
   bibsource = {dblp computer science bibliography, http://dblp.org}
 }
 
+@online{osi,
+  author = {Microsoft},
+  title = {The OSI Model's Seven Layers Defined and Functions Explained},
+  year = 2014,
+  url = {https://support.microsoft.com/en-us/kb/103884},
+  urldate = {2016-02-15}
+}
+
 @online{Yuchung,
   author = {Yuchung Cheng},
   title = {Let's make TCP faster},
@@ -60,7 +68,7 @@
   title = {An Overview of Link Aggregation and LACP},
   year = 2015,
   url = {https://thenetworkway.wordpress.com/2015/05/01/an-overview-of-link-aggregation-and-lacp},
-  urldate = {2016-00-15}
+  urldate = {2016-02-15}
 }
 
 @online{ipspace,
@@ -68,5 +76,221 @@
   title = {What went wrong: SCTP},
   year = 2009,
   url = {http://blog.ipspace.net/2009/08/what-went-wrong-sctp.html},
-  urldate = {2016-00-15}
+  urldate = {2016-02-15}
+}
+
+@inproceedings {HDPDB13,
+	title = {Are TCP Extensions Middlebox-proof?},
+	author = {Benjamin Hesmans and Fabien Duchene and Christoph Paasch and Gregory Detal and Olivier Bonaventure},
+	publisher = {ACM},
+	year = {2013},
+	month = {December},
+	key = {Protocol; TCP; Multipath TCP; Middlebox},
+	booktitle = {CoNEXT workshop HotMiddlebox},
+}
+
+@inproceedings {RPBFHDBH12,
+	title = {How Hard Can It Be? Designing and Implementing a Deployable Multipath TCP},
+	author = {Costin Raiciu and Christoph Paasch and Sébastien Barré and Alan Ford and Michio Honda and Fabien Duchene and Olivier Bonaventure and Mark Handley},
+	year = {2012},
+	booktitle = {USENIX Symposium of Networked Systems Design and Implementation (NSDI'12), San Jose (CA)},
+}
+
+@Article{2014:2578508,
+	journal = {Queue},
+	author = { Christoph Paasch, Olivier Bonaventure},
+	year = {2014},
+	issn = {1542-7730},
+	volume = {12},
+	number = {2},
+	issue_date = {February 2014},
+	issue_description = {The Internet},
+	publisher = {ACM},
+	address = {New York, NY, USA},
+	doi = {10.1145/2578508.2591369},
+}
+
+@techreport{eardley-mptcp-implementations-survey-02,
+	number=		{draft-eardley-mptcp-implementations-survey-02},
+	type =		{Internet-Draft},
+	institution =	{Internet Engineering Task Force},
+	publisher =	{Internet Engineering Task Force},
+	note =		{Work in Progress},
+	url =		{https://tools.ietf.org/html/draft-eardley-mptcp-implementations-survey-02},
+	author=		{Philip Eardley},
+	title=		{{Survey of MPTCP Implementations}},
+	pagetotal =	38,
+	year =		2014,
+	month =		jan,
+	day =		13,
+}
+
+@online{caia,
+  author = {Centre for Advanced Internet Architectures (CAIA)},
+  title = {Multipath TCP},
+  year = 2015,
+  url = {http://caia.swin.edu.au/urp/newtcp/mptcp/tools.html},
+  urldate = {2016-01-16}
+}
+
+@online{netscalar,
+  author = {John Gudmundson},
+  title = {Maximize mobile user experience with NetScaler Multipath TCP},
+  year = 2013,
+  url = {https://www.citrix.com/blogs/2013/05/28/maximize-mobile-user-experience-with-netscaler-multipath-tcp/},
+  urldate = {2016-01-16}
+}
+
+@misc{mptcpandroid,
+  title = {MultiPath TCP - Linux Kernel implementation (Android Users)},
+  url = {https://multipath-tcp.org/pmwiki.php?n=Users.Android},
+  note = {Accessed: 2015-09-30}
+}
+
+@misc{mptcpsolaris,
+  title = {[multipathtcp] Some comments on RFC 6824},
+  author = {rao.shoaib@oracle.com},
+  url = {https://mailarchive.ietf.org/arch/msg/multipathtcp/ugMIu566McQMn8YCju-CTjW9beY},
+  note = {Accessed: 2016-01-18}
+}
+
+@misc{apple,
+  title = {iOS: Multipath TCP Support in iOS 7},
+  author = {Apple},
+  url = {https://support.apple.com/en-us/HT201373},
+  note = {Accessed: 2016-01-18}
+}
+
+@online{osx,
+  author = {Kate Pearce},
+  title = {MPTCP Roams Free (By Default!) – OS X Yosemite},
+  year = 2014,
+  url = {http://labs.neohapsis.com/author/katepearcenz/},
+  urldate = {2016-01-16}
+}
+
+@proceedings{DBLP:conf/fia/2010,
+  editor    = {Georgios Tselentis and
+               Alex Galis and
+               Anastasius Gavras and
+               Srdjan Krco and
+               Volkmar Lotz and
+               Elena Paslaru Bontas Simperl and
+               Burkhard Stiller and
+               Theodore B. Zahariadis},
+  title     = {Towards the Future Internet - Emerging Trends from European Research},
+  pages     = {21--23},
+  publisher = {IOS Press},
+  year      = {2010},
+  isbn      = {978-1-60750-538-9},
+}
+
+@article{Raiciu:2011:IDP:2043164.2018467,
+	author = {Raiciu, Costin and Barre, Sebastien and Pluntke, Christopher and Greenhalgh, Adam and Wischik, Damon and Handley, Mark},
+	title = {Improving Datacenter Performance and Robustness with Multipath TCP},
+	journal = {SIGCOMM Comput. Commun. Rev.},
+	issue_date = {August 2011},
+	volume = {41},
+	number = {4},
+	month = aug,
+	year = {2011},
+	issn = {0146-4833},
+	pages = {266--277},
+	numpages = {12},
+	url = {http://doi.acm.org/10.1145/2043164.2018467},
+	doi = {10.1145/2043164.2018467},
+	acmid = {2018467},
+	publisher = {ACM},
+	address = {New York, NY, USA},
+}
+
+@inproceedings {HTSB15,
+	title = {A First Look at Real Multipath TCP Traffic},
+	author = {Benjamin Hesmans and Hoang Tran-Viet and Ramin Sadre and Olivier Bonaventure},
+	year = {2015},
+	booktitle = {Traffic Monitoring and Analysis},
+}
+
+@misc{dashboard,
+  title = {Deployment of MPTCP-enabled hosts in the Alexa top-1M list},
+  author = {NICTA and Simula Research Laboratory},
+  url = {https://academic-network-security.research.nicta.com.au/mptcp/deployment/},
+  note = {Accessed: 2016-02-16}
+}
+
+@inproceedings{Mehani:2015:ELM:2798087.2798088,
+	author = {Mehani, Olivier and Holz, Ralph and Ferlin, Simone and Boreli, Roksana},
+	title = {An Early Look at Multipath TCP Deployment in the Wild},
+	booktitle = {Proceedings of the 6th International Workshop on Hot Topics in Planet-Scale Measurement},
+	series = {HotPlanet '15},
+	year = {2015},
+	isbn = {978-1-4503-3534-8},
+	location = {Paris, France},
+	pages = {7--12},
+	numpages = {6},
+	url = {http://doi.acm.org/10.1145/2798087.2798088},
+	doi = {10.1145/2798087.2798088},
+	acmid = {2798088},
+	publisher = {ACM},
+	address = {New York, NY, USA},
+	keywords = {MPTCP, deployment, measurement, multipath, scan, transport},
+}
+
+@misc{hashchain,
+  title = {[multipathtcp] Hash Chain Security Solution},
+  author = {alan.ford at roke.co.uk},
+  url = {https://www.ietf.org/mail-archive/web/multipathtcp/current/msg01275.html},
+  note = {Accessed: 2016-02-04}
+}
+
+@techreport{paasch-mptcp-ssl-00,
+	number=		{draft-paasch-mptcp-ssl-00},
+	type =		{Internet-Draft},
+	institution =	{Internet Engineering Task Force},
+	publisher =	{Internet Engineering Task Force},
+	note =		{Work in Progress},
+	url =		{https://tools.ietf.org/html/draft-paasch-mptcp-ssl-00},
+	author=		{Christoph Paasch and Olivier Bonaventure},
+	title=		{{Securing the MultiPath TCP handshake with external keys}},
+	pagetotal =	8,
+	year =		2013,
+	month =		apr,
+	day =		18,
+}
+
+@TechReport{draft-bagnulo-mptcp-secure,
+	author = "Marcelo Bagnulo Braun",
+	title = "{Secure MPTCP}",
+	type = "Internet Draft",
+	number = "draft-bagnulo-mptcp-secure-00",
+	day = "12",
+	month = feb,
+	year = "2014",
+	institution = "IETF, Individual Submission",
+	abstract = "{This memo contains some initial thoughts about how to secure MPTCP. As currently defined, MPTCP provides basic security features to protect the MPTCP signaling and the data flows unprotected. In this note, we explore the possible use to tcpcrypt to provide enhanced security to MPTCP.}",
+	url = "https://tools.ietf.org/id/draft-bagnulo-mptcp-secure-00.txt",
+}
+
+@techreport{ietf-tcpinc-tcpcrypt-00,
+	number=		{draft-ietf-tcpinc-tcpcrypt-00},
+	type =		{Internet-Draft},
+	institution =	{Internet Engineering Task Force},
+	publisher =	{Internet Engineering Task Force},
+	note =		{Work in Progress},
+	url =		{https://tools.ietf.org/html/draft-ietf-tcpinc-tcpcrypt-00},
+	author=		{Andrea Bittau and Dan Boneh and Daniel B. Giffin and Mike Hamburg and Mark J. Handley and David Mazieres and Quinn Slack and Eric W. Smith},
+	title=		{{Cryptographic protection of TCP Streams (tcpcrypt)}},
+	pagetotal =	25,
+	year =		2015,
+	month =		nov,
+	day =		2,
+	abstract =	{This document specifies tcpcrypt, a cryptographic protocol that protects TCP payload data and is negotiated by means of the TCP Encryption Negotiation Option (TCP-ENO) [I-D.ietf-tcpinc-tcpeno]. Tcpcrypt coexists with middleboxes by tolerating resegmentation, NATs, and other manipulations of the TCP header. The protocol is self-contained and specifically tailored to TCP implementations, which often reside in kernels or other environments in which large external software dependencies can be undesirable. Because of option size restrictions, the protocol requires one additional one-way message latency to perform key exchange. However, this cost is avoided between two hosts that have recently established a previous tcpcrypt connection.},
+}
+
+@inproceedings {BPB11, 
+	title = {MultiPath TCP: From Theory to Practice},
+	author = {Sébastien Barré and Christoph Paasch and Olivier Bonaventure},
+	year = {2011},
+	month = {May},
+	booktitle = {IFIP Networking, Valencia},
 }
