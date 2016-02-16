@@ -83,7 +83,7 @@
 	title = {Are TCP Extensions Middlebox-proof?},
 	author = {Benjamin Hesmans and Fabien Duchene and Christoph Paasch and Gregory Detal and Olivier Bonaventure},
 	publisher = {ACM},
-	year = {2013},
+	year = 2013,
 	month = {December},
 	key = {Protocol; TCP; Multipath TCP; Middlebox},
 	booktitle = {CoNEXT workshop HotMiddlebox},
@@ -263,11 +263,8 @@
 	title = "{Secure MPTCP}",
 	type = "Internet Draft",
 	number = "draft-bagnulo-mptcp-secure-00",
-	day = "12",
-	month = feb,
 	year = "2014",
 	institution = "IETF, Individual Submission",
-	abstract = "{This memo contains some initial thoughts about how to secure MPTCP. As currently defined, MPTCP provides basic security features to protect the MPTCP signaling and the data flows unprotected. In this note, we explore the possible use to tcpcrypt to provide enhanced security to MPTCP.}",
 	url = "https://tools.ietf.org/id/draft-bagnulo-mptcp-secure-00.txt",
 }
 
@@ -284,7 +281,6 @@
 	year =		2015,
 	month =		nov,
 	day =		2,
-	abstract =	{This document specifies tcpcrypt, a cryptographic protocol that protects TCP payload data and is negotiated by means of the TCP Encryption Negotiation Option (TCP-ENO) [I-D.ietf-tcpinc-tcpeno]. Tcpcrypt coexists with middleboxes by tolerating resegmentation, NATs, and other manipulations of the TCP header. The protocol is self-contained and specifically tailored to TCP implementations, which often reside in kernels or other environments in which large external software dependencies can be undesirable. Because of option size restrictions, the protocol requires one additional one-way message latency to perform key exchange. However, this cost is avoided between two hosts that have recently established a previous tcpcrypt connection.},
 }
 
 @inproceedings {BPB11,
@@ -321,22 +317,22 @@
 }
 
 @misc{patch2,
-  title = {mptcp: Make 'mptcp_hmac_sha1' more flexible},
+  title = {mptcp: Make 'mptcp\_hmac\_sha1' more flexible},
   url = {https://github.com/multipath-tcp/mptcp/commit/f860de960e19cb557400c08e49288af63c51319f},
 }
 
 @misc{patch3,
-  title = {mptcp: Add ADD_ADDR2 option},
+  title = {mptcp: Add ADD\_ADDR2 option},
   url = {https://github.com/multipath-tcp/mptcp/commit/de09a83186666c67c9831057a83ba426f91fbea3},
 }
 
 @misc{patch4,
-  title = {mptcp: Add IPv6 support for ADD_ADDR2},
+  title = {mptcp: Add IPv6 support for ADD\_ADDR2},
   url = {https://github.com/multipath-tcp/mptcp/commit/8e86cf262108513296ac0952f2ffef717dc12f4b},
 }
 
 @misc{patch5,
-  title = {mptcp: Check tcp_sock pointer not null in mptcp_parse_options()},
+  title = {mptcp: Check tcp\_sock pointer not null in mptcp\_parse\_options()},
   url = {https://github.com/multipath-tcp/mptcp/commit/8f0c5dde7f57603aaf134a0f1c2a42d1a1236c8f},
 }
 
