@@ -287,10 +287,60 @@
 	abstract =	{This document specifies tcpcrypt, a cryptographic protocol that protects TCP payload data and is negotiated by means of the TCP Encryption Negotiation Option (TCP-ENO) [I-D.ietf-tcpinc-tcpeno]. Tcpcrypt coexists with middleboxes by tolerating resegmentation, NATs, and other manipulations of the TCP header. The protocol is self-contained and specifically tailored to TCP implementations, which often reside in kernels or other environments in which large external software dependencies can be undesirable. Because of option size restrictions, the protocol requires one additional one-way message latency to perform key exchange. However, this cost is avoided between two hosts that have recently established a previous tcpcrypt connection.},
 }
 
-@inproceedings {BPB11, 
+@inproceedings {BPB11,
 	title = {MultiPath TCP: From Theory to Practice},
 	author = {Sébastien Barré and Christoph Paasch and Olivier Bonaventure},
 	year = {2011},
 	month = {May},
 	booktitle = {IFIP Networking, Valencia},
+}
+
+@phdthesis {P14,
+	title = {Improving Multipath TCP},
+	author = {Christoph Paasch},
+	school = {UCLouvain / ICTEAM / EPL},
+	year = {2014},
+	month = {November},
+}
+
+@misc{shash61,
+  title = {Linux/crypto/shash.c - Line 61},
+  url = {http://lxr.free-electrons.com/source/crypto/shash.c#L61},
+  note = {Accessed: 2015-12-07}
+}
+
+@misc{shash43,
+  title = {Linux/crypto/shash.c - Line 43},
+  url = {http://lxr.free-electrons.com/source/crypto/shash.c#L43},
+  note = {Accessed: 2015-12-07}
+}
+
+@misc{patch1,
+  title = {mptcp: Add MPTCP version control},
+  url = {https://github.com/multipath-tcp/mptcp/commit/c9b4b66a0e544b3eae5d898206b5a28628b728a7},
+}
+
+@misc{patch2,
+  title = {mptcp: Make 'mptcp_hmac_sha1' more flexible},
+  url = {https://github.com/multipath-tcp/mptcp/commit/f860de960e19cb557400c08e49288af63c51319f},
+}
+
+@misc{patch3,
+  title = {mptcp: Add ADD_ADDR2 option},
+  url = {https://github.com/multipath-tcp/mptcp/commit/de09a83186666c67c9831057a83ba426f91fbea3},
+}
+
+@misc{patch4,
+  title = {mptcp: Add IPv6 support for ADD_ADDR2},
+  url = {https://github.com/multipath-tcp/mptcp/commit/8e86cf262108513296ac0952f2ffef717dc12f4b},
+}
+
+@misc{patch5,
+  title = {mptcp: Check tcp_sock pointer not null in mptcp_parse_options()},
+  url = {https://github.com/multipath-tcp/mptcp/commit/8f0c5dde7f57603aaf134a0f1c2a42d1a1236c8f},
+}
+
+@misc{blog,
+  title = {Multipath TCP News : January 2016},
+  url = {http://blog.multipath-tcp.org/blog/html/2016/01/05/mptcpnews.html#},
 }
