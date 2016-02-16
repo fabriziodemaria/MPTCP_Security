@@ -1,0 +1,213 @@
+\chapter{MPTCP version 1 capture}
+\label{app:b}
+
+This appendix contains the first 10 packets of a MPTCP connection between two UML virtual machines using the IPv6 network scenario shown in figure \ref{fig:netip6_2}. The MPTCP version in use includes the set of patches developed during the thesis work (compliant with \rfc{6824bis-04}), such as version control (set to 1) and ADD\_ADDR2 (the truncated HMAC value is present in the ADD\_ADDR packet). The capture file is generated with the Wireshark tool made compatible with ADD\_ADDR2, and the displayed content is trimmed to just show the TCP flags and the MPTCP options exchanged in signaling packets. Note that this capture is obtained by monitoring \textit{tap0}.
+
+\begingroup
+    \fontsize{8pt}{9pt}\selectfont
+	\begin{verbatim}
+Frame 1: 106 bytes on wire (848 bits), 106 bytes captured (848 bits) on interface 0
+Ethernet II, Src: c6:c3:59:b0:f2:e6 (c6:c3:59:b0:f2:e6), Dst: 4e:7f:57:76:1a:e4 (4e:7f:57:76:1a:e4)
+Internet Protocol Version 6, Src: 1000:1:1::2, Dst: 1000:2:1::2
+Transmission Control Protocol, Src Port: 59883, Dst Port: 5001, Seq: 0, Len: 0
+    ...
+    Flags: 0x002 (SYN)
+    ...
+        Multipath TCP: Multipath Capable
+            Kind: Multipath TCP (30)
+            Length: 12
+            0000 .... = Multipath TCP subtype: Multipath Capable (0)
+            .... 0001 = Multipath TCP version: 1
+            Multipath TCP flags: 0x81
+                1... .... = Checksum required: 1
+                .0.. .... = Extensibility: 0
+                .... ...1 = Use HMAC-SHA1: 1
+                ..00 000. = Reserved: 0x00
+            Sender's Key: 5002747019653015322
+    ...
+
+Frame 2: 106 bytes on wire (848 bits), 106 bytes captured (848 bits) on interface 0
+Ethernet II, Src: 4e:7f:57:76:1a:e4 (4e:7f:57:76:1a:e4), Dst: c6:c3:59:b0:f2:e6 (c6:c3:59:b0:f2:e6)
+Internet Protocol Version 6, Src: 1000:2:1::2, Dst: 1000:1:1::2
+Transmission Control Protocol, Src Port: 5001, Dst Port: 59883, Seq: 0, Ack: 1, Len: 0
+    ...
+    Flags: 0x012 (SYN, ACK)
+    ...
+        Multipath TCP: Multipath Capable
+            Kind: Multipath TCP (30)
+            Length: 12
+            0000 .... = Multipath TCP subtype: Multipath Capable (0)
+            .... 0001 = Multipath TCP version: 1
+            Multipath TCP flags: 0x81
+                1... .... = Checksum required: 1
+                .0.. .... = Extensibility: 0
+                .... ...1 = Use HMAC-SHA1: 1
+                ..00 000. = Reserved: 0x00
+            Sender's Key: 9989746376998273982
+    ...
+
+Frame 3: 114 bytes on wire (912 bits), 114 bytes captured (912 bits) on interface 0
+Ethernet II, Src: c6:c3:59:b0:f2:e6 (c6:c3:59:b0:f2:e6), Dst: 4e:7f:57:76:1a:e4 (4e:7f:57:76:1a:e4)
+Internet Protocol Version 6, Src: 1000:1:1::2, Dst: 1000:2:1::2
+Transmission Control Protocol, Src Port: 59883, Dst Port: 5001, Seq: 1, Ack: 1, Len: 0
+    ...
+    Flags: 0x010 (ACK)
+    ...
+        Multipath TCP: Multipath Capable
+            Kind: Multipath TCP (30)
+            Length: 20
+            0000 .... = Multipath TCP subtype: Multipath Capable (0)
+            .... 0001 = Multipath TCP version: 1
+            Multipath TCP flags: 0x81
+                1... .... = Checksum required: 1
+                .0.. .... = Extensibility: 0
+                .... ...1 = Use HMAC-SHA1: 1
+                ..00 000. = Reserved: 0x00
+            Sender's Key: 5002747019653015322
+            Receiver's Key: 9989746376998273982
+        Multipath TCP: Data Sequence Signal
+            Kind: Multipath TCP (30)
+            Length: 8
+            0010 .... = Multipath TCP subtype: Data Sequence Signal (2)
+            Multipath TCP flags: 0x01
+                ...0 .... = DATA_FIN: 0
+                .... 0... = Data Sequence Number is 8 octets: 0
+                .... .0.. = Data Sequence Number, Subflow Sequence Number, Data-level Length, Checksum present: 0
+                .... ..0. = Data ACK is 8 octets: 0
+                .... ...1 = Data ACK is present: 1
+            Original MPTCP Data ACK: 872094606
+    ...
+
+Frame 4: 114 bytes on wire (912 bits), 114 bytes captured (912 bits) on interface 0
+Ethernet II, Src: 4e:7f:57:76:1a:e4 (4e:7f:57:76:1a:e4), Dst: c6:c3:59:b0:f2:e6 (c6:c3:59:b0:f2:e6)
+Internet Protocol Version 6, Src: 1000:2:1::2, Dst: 1000:1:1::2
+Transmission Control Protocol, Src Port: 5001, Dst Port: 59883, Seq: 1, Ack: 1, Len: 0
+    ...
+    Flags: 0x010 (ACK)
+    ...
+        Multipath TCP: Add Address
+            Kind: Multipath TCP (30)
+            Length: 28
+            0011 .... = Multipath TCP subtype: Add Address (3)
+            .... 0110 = IP version: 6
+            Address ID: 8
+            Advertised IPv6 Address: 1000:2:2::2
+            Truncated HMAC: 7594364714824743626
+    ...
+
+Frame 5: 130 bytes on wire (1040 bits), 130 bytes captured (1040 bits) on interface 0
+Ethernet II, Src: c6:c3:59:b0:f2:e6 (c6:c3:59:b0:f2:e6), Dst: 4e:7f:57:76:1a:e4 (4e:7f:57:76:1a:e4)
+Internet Protocol Version 6, Src: 1000:1:1::2, Dst: 1000:2:1::2
+Transmission Control Protocol, Src Port: 59883, Dst Port: 5001, Seq: 1, Ack: 1, Len: 24
+    ...
+    Flags: 0x018 (PSH, ACK)
+    ...
+        Multipath TCP: Data Sequence Signal
+            Kind: Multipath TCP (30)
+            Length: 20
+            0010 .... = Multipath TCP subtype: Data Sequence Signal (2)
+            Multipath TCP flags: 0x05
+                ...0 .... = DATA_FIN: 0
+                .... 0... = Data Sequence Number is 8 octets: 0
+                .... .1.. = Data Sequence Number, Subflow Sequence Number, Data-level Length, Checksum present: 1
+                .... ..0. = Data ACK is 8 octets: 0
+                .... ...1 = Data ACK is present: 1
+            Original MPTCP Data ACK: 872094606
+            Data Sequence Number: 3712008769  (32bits version)
+            Subflow Sequence Number: 1
+            Data-level Length: 24
+    ...
+
+Frame 6: 94 bytes on wire (752 bits), 94 bytes captured (752 bits) on interface 0
+Ethernet II, Src: 4e:7f:57:76:1a:e4 (4e:7f:57:76:1a:e4), Dst: c6:c3:59:b0:f2:e6 (c6:c3:59:b0:f2:e6)
+Internet Protocol Version 6, Src: 1000:2:1::2, Dst: 1000:1:1::2
+Transmission Control Protocol, Src Port: 5001, Dst Port: 59883, Seq: 1, Ack: 25, Len: 0
+    ...
+    Flags: 0x010 (ACK)
+    ...
+        Multipath TCP: Data Sequence Signal
+            Kind: Multipath TCP (30)
+            Length: 8
+            0010 .... = Multipath TCP subtype: Data Sequence Signal (2)
+            Multipath TCP flags: 0x01
+                ...0 .... = DATA_FIN: 0
+                .... 0... = Data Sequence Number is 8 octets: 0
+                .... .0.. = Data Sequence Number, Subflow Sequence Number, Data-level Length, Checksum present: 0
+                .... ..0. = Data ACK is 8 octets: 0
+                .... ...1 = Data ACK is present: 1
+            Original MPTCP Data ACK: 3712008793
+    ...
+
+Frame 7: 106 bytes on wire (848 bits), 106 bytes captured (848 bits) on interface 0
+Ethernet II, Src: c6:c3:59:b0:f2:e6 (c6:c3:59:b0:f2:e6), Dst: 4e:7f:57:76:1a:e4 (4e:7f:57:76:1a:e4)
+Internet Protocol Version 6, Src: 1000:1:1::2, Dst: 1000:2:2::2
+Transmission Control Protocol, Src Port: 45840, Dst Port: 5001, Seq: 0, Len: 0
+    ...
+    Flags: 0x002 (SYN)
+    ...
+        Multipath TCP: Join Connection
+            Kind: Multipath TCP (30)
+            Length: 12
+            0001 .... = Multipath TCP subtype: Join Connection (1)
+            Multipath TCP flags: 0x10
+                ...1 .... = Backup flag: 1
+            Address ID: 8
+            Receiver's Token: 4008023058
+            Sender's Random Number: 4053633689
+    ...
+
+Frame 8: 110 bytes on wire (880 bits), 110 bytes captured (880 bits) on interface 0
+Ethernet II, Src: 4e:7f:57:76:1a:e4 (4e:7f:57:76:1a:e4), Dst: c6:c3:59:b0:f2:e6 (c6:c3:59:b0:f2:e6)
+Internet Protocol Version 6, Src: 1000:2:2::2, Dst: 1000:1:1::2
+Transmission Control Protocol, Src Port: 5001, Dst Port: 45840, Seq: 0, Ack: 1, Len: 0
+    ...
+    Flags: 0x012 (SYN, ACK)
+    ...
+        Multipath TCP: Join Connection
+            Kind: Multipath TCP (30)
+            Length: 16
+            0001 .... = Multipath TCP subtype: Join Connection (1)
+            Multipath TCP flags: 0x10
+                ...1 .... = Backup flag: 1
+            Address ID: 4104
+            Sender's Truncated HMAC: 16644964641649406387
+            Sender's Random Number: 3923749318
+    ...
+
+Frame 9: 110 bytes on wire (880 bits), 110 bytes captured (880 bits) on interface 0
+Ethernet II, Src: c6:c3:59:b0:f2:e6 (c6:c3:59:b0:f2:e6), Dst: 4e:7f:57:76:1a:e4 (4e:7f:57:76:1a:e4)
+Internet Protocol Version 6, Src: 1000:1:1::2, Dst: 1000:2:2::2
+Transmission Control Protocol, Src Port: 45840, Dst Port: 5001, Seq: 1, Ack: 1, Len: 0
+    ...
+    Flags: 0x010 (ACK)
+    ...
+        Multipath TCP: Join Connection
+            Kind: Multipath TCP (30)
+            Length: 24
+            0001 .... = Multipath TCP subtype: Join Connection (1)
+            .... 0000 0000 0000 = Reserved: 0x0000
+            Sender's HMAC: 95d50d4aa4861fb5adccd0b92017622fa0275f29
+    ...
+
+Frame 10: 94 bytes on wire (752 bits), 94 bytes captured (752 bits) on interface 0
+Ethernet II, Src: 4e:7f:57:76:1a:e4 (4e:7f:57:76:1a:e4), Dst: c6:c3:59:b0:f2:e6 (c6:c3:59:b0:f2:e6)
+Internet Protocol Version 6, Src: 1000:2:2::2, Dst: 1000:1:1::2
+Transmission Control Protocol, Src Port: 5001, Dst Port: 45840, Seq: 1, Ack: 1, Len: 0
+    ...
+    Flags: 0x010 (ACK)
+    ...
+        Multipath TCP: Data Sequence Signal
+            Kind: Multipath TCP (30)
+            Length: 8
+            0010 .... = Multipath TCP subtype: Data Sequence Signal (2)
+            Multipath TCP flags: 0x01
+                ...0 .... = DATA_FIN: 0
+                .... 0... = Data Sequence Number is 8 octets: 0
+                .... .0.. = Data Sequence Number, Subflow Sequence Number, Data-level Length, Checksum present: 0
+                .... ..0. = Data ACK is 8 octets: 0
+                .... ...1 = Data ACK is present: 1
+            Original MPTCP Data ACK: 3712008793
+    ...
+
+	\end{verbatim}
+\endgroup

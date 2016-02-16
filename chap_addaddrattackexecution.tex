@@ -174,6 +174,8 @@ This procedure has been tested on a Ubuntu 14.04 LTS machine. Before reading the
     If 100\% progress is reached in the attack process, just try to send a message from the server to the client and it will be sent to the attacking machine instead (i.e. to localhost). Further improvements would allow to also answer back to the server, thus impersonating the client.
 \end{enumerate} 
 
+The capture file resulting from this attack can be inspected in appendix \ref{app:a}.
+
 \section{Conclusions} 
 \label{limitationsandfuturework}
 The Scapy tool developed for this research targets a specific scenario to exploit the ADD\_ADDR vulnerability. It is not intended to be general enough to break all the existing MPTCP implementations. Nevertheless, by succeeding in this specific case involving a \textit{netcat} communication between two hosts, it is indeed proved the feasibility and gravity of the problem, and it should be relatively easy to extend the portability of the attacking tool to act in new scenarios, if required.

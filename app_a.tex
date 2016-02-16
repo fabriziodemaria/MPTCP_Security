@@ -1,3 +1,174 @@
-\chapter{An appendix}
+\chapter{ADD\_ADDR attack capture}
 \label{app:a}
-Appendix content goes here...
+
+This appendix contains the capture file for the ADD\_ADDR attack execution as described in chapter \ref{chap:addaddrattackexecution}. This capture is obtained by monitoring \textit{tap0} (targeted interface) and trimmed to just show the TCP flags and the MPTCP options exchanged in signaling packets.
+
+\begingroup
+    \fontsize{8pt}{9pt}\selectfont
+	\begin{verbatim}
+...
+Frame 2: 86 bytes on wire (688 bits), 86 bytes captured (688 bits)
+Ethernet II, Src: 36:92:62:7e:a3:aa (36:92:62:7e:a3:aa), Dst: a6:34:88:29:79:30 (a6:34:88:29:79:30)
+Internet Protocol Version 4, Src: 10.1.1.2, Dst: 10.2.1.2
+Transmission Control Protocol, Src Port: 59297, Dst Port: 33443, Seq: 0, Len: 0
+    ...
+    Flags: 0x002 (SYN)
+    ...
+        Multipath TCP: Multipath Capable
+            Kind: Multipath TCP (30)
+            Length: 12
+            0000 .... = Multipath TCP subtype: Multipath Capable (0)
+            .... 0000 = Multipath TCP version: 0
+            Multipath TCP flags: 0x81
+                1... .... = Checksum required: 1
+                .0.. .... = Extensibility: 0
+                .... ...1 = Use HMAC-SHA1: 1
+                ..00 000. = Reserved: 0x00
+            Sender's Key: 16701209312697411725
+    ...
+
+Frame 3: 86 bytes on wire (688 bits), 86 bytes captured (688 bits)
+Ethernet II, Src: a6:34:88:29:79:30 (a6:34:88:29:79:30), Dst: 36:92:62:7e:a3:aa (36:92:62:7e:a3:aa)
+Internet Protocol Version 4, Src: 10.2.1.2, Dst: 10.1.1.2
+Transmission Control Protocol, Src Port: 33443, Dst Port: 59297, Seq: 0, Ack: 1, Len: 0
+    ...
+    Flags: 0x012 (SYN, ACK)
+    ...
+        Multipath TCP: Multipath Capable
+            Kind: Multipath TCP (30)
+            Length: 12
+            0000 .... = Multipath TCP subtype: Multipath Capable (0)
+            .... 0000 = Multipath TCP version: 0
+            Multipath TCP flags: 0x81
+                1... .... = Checksum required: 1
+                .0.. .... = Extensibility: 0
+                .... ...1 = Use HMAC-SHA1: 1
+                ..00 000. = Reserved: 0x00
+            Sender's Key: 1243510374397414024
+    ...
+
+Frame 4: 94 bytes on wire (752 bits), 94 bytes captured (752 bits)
+Ethernet II, Src: 36:92:62:7e:a3:aa (36:92:62:7e:a3:aa), Dst: a6:34:88:29:79:30 (a6:34:88:29:79:30)
+Internet Protocol Version 4, Src: 10.1.1.2, Dst: 10.2.1.2
+Transmission Control Protocol, Src Port: 59297, Dst Port: 33443, Seq: 1, Ack: 1, Len: 0
+    ...
+    Flags: 0x010 (ACK)
+    ...
+        Multipath TCP: Multipath Capable
+            Kind: Multipath TCP (30)
+            Length: 20
+            0000 .... = Multipath TCP subtype: Multipath Capable (0)
+            .... 0000 = Multipath TCP version: 0
+            Multipath TCP flags: 0x81
+                1... .... = Checksum required: 1
+                .0.. .... = Extensibility: 0
+                .... ...1 = Use HMAC-SHA1: 1
+                ..00 000. = Reserved: 0x00
+            Sender's Key: 16701209312697411725
+    ...
+
+Frame 5: 87 bytes on wire (696 bits), 87 bytes captured (696 bits)
+Ethernet II, Src: 36:92:62:7e:a3:aa (36:92:62:7e:a3:aa), Dst: a6:34:88:29:79:30 (a6:34:88:29:79:30)
+Internet Protocol Version 4, Src: 10.1.1.2, Dst: 10.2.1.2
+Transmission Control Protocol, Src Port: 59297, Dst Port: 33443, Seq: 1, Ack: 1, Len: 1
+    ...
+    Flags: 0x018 (PSH, ACK)
+    ...
+        Multipath TCP: Data Sequence Signal
+            Kind: Multipath TCP (30)
+            Length: 20
+            0010 .... = Multipath TCP subtype: Data Sequence Signal (2)
+            Multipath TCP flags: 0x05
+                ...0 .... = DATA_FIN: 0
+                .... 0... = Data Sequence Number is 8 octets: 0
+                .... .1.. = Data Sequence Number, Subflow Sequence Number, Data-level Length, Checksum present: 1
+                .... ..0. = Data ACK is 8 octets: 0
+                .... ...1 = Data ACK is present: 1
+            Original MPTCP Data ACK: 2078391628
+            Data Sequence Number: 2995440535  (32bits version)
+            Subflow Sequence Number: 1
+            Data-level Length: 1
+    ...
+
+...
+
+Frame 21: 62 bytes on wire (496 bits), 62 bytes captured (496 bits)
+Ethernet II, Src: a6:34:88:29:79:30 (a6:34:88:29:79:30), Dst: 36:92:62:7e:a3:aa (36:92:62:7e:a3:aa)
+Internet Protocol Version 4, Src: 10.2.1.2, Dst: 10.1.1.2
+Transmission Control Protocol, Src Port: 33443, Dst Port: 59297, Seq: 1004, Ack: 4294966299, Len: 0
+    ...
+    Flags: 0x010 (ACK)
+    ...
+        Multipath TCP: Add Address
+            Kind: Multipath TCP (30)
+            Length: 8
+            0011 .... = Multipath TCP subtype: Add Address (3)
+            .... 0100 = IP version: 4
+            Address ID: 6
+            Advertised IPv4 Address: 10.1.1.1
+    ...
+
+Frame 22: 86 bytes on wire (688 bits), 86 bytes captured (688 bits)
+Ethernet II, Src: 36:92:62:7e:a3:aa (36:92:62:7e:a3:aa), Dst: a6:34:88:29:79:30 (a6:34:88:29:79:30)
+Internet Protocol Version 4, Src: 10.1.1.2, Dst: 10.1.1.1
+Transmission Control Protocol, Src Port: 53953, Dst Port: 33443, Seq: 0, Len: 0
+    ...
+    Flags: 0x002 (SYN)
+    ...
+        Multipath TCP: Join Connection
+            Kind: Multipath TCP (30)
+            Length: 12
+            0001 .... = Multipath TCP subtype: Join Connection (1)
+            Multipath TCP flags: 0x10
+                ...1 .... = Backup flag: 1
+            Address ID: 2
+            Receiver's Token: 1242546132
+            Sender's Random Number: 3113663070
+    ...
+
+... [TCP Retranmission here]
+
+Frame 24: 90 bytes on wire (720 bits), 90 bytes captured (720 bits)
+Ethernet II, Src: a6:34:88:29:79:30 (a6:34:88:29:79:30), Dst: 36:92:62:7e:a3:aa (36:92:62:7e:a3:aa)
+Internet Protocol Version 4, Src: 10.1.1.1, Dst: 10.1.1.2
+Transmission Control Protocol, Src Port: 33443, Dst Port: 53953, Seq: 0, Ack: 1, Len: 0
+    ...
+    Flags: 0x012 (SYN, ACK)
+    ...
+        Multipath TCP: Join Connection
+            Kind: Multipath TCP (30)
+            Length: 16
+            0001 .... = Multipath TCP subtype: Join Connection (1)
+            Multipath TCP flags: 0x10
+                ...1 .... = Backup flag: 1
+            Address ID: 4098
+            Sender's Truncated HMAC: 2867407674975684266
+            Sender's Random Number: 1275303205
+    ...
+
+Frame 25: 90 bytes on wire (720 bits), 90 bytes captured (720 bits)
+Ethernet II, Src: 36:92:62:7e:a3:aa (36:92:62:7e:a3:aa), Dst: a6:34:88:29:79:30 (a6:34:88:29:79:30)
+Internet Protocol Version 4, Src: 10.1.1.2, Dst: 10.1.1.1
+Transmission Control Protocol, Src Port: 53953, Dst Port: 33443, Seq: 1, Ack: 1, Len: 0
+    ...
+    Flags: 0x010 (ACK)
+    ...
+        Multipath TCP: Join Connection
+            Kind: Multipath TCP (30)
+            Length: 24
+            0001 .... = Multipath TCP subtype: Join Connection (1)
+            .... 0000 0000 0000 = Reserved: 0x0000
+            Sender's HMAC: 20767a5fd16ca5a23e652f78620883acfbca2590
+    ...
+
+...
+
+Frame 30: 54 bytes on wire (432 bits), 54 bytes captured (432 bits)
+Ethernet II, Src: a6:34:88:29:79:30 (a6:34:88:29:79:30), Dst: 36:92:62:7e:a3:aa (36:92:62:7e:a3:aa)
+Internet Protocol Version 4, Src: 10.2.1.2, Dst: 10.1.1.2
+Transmission Control Protocol, Src Port: 33443, Dst Port: 59297, Seq: 4, Len: 0
+    ...
+    Flags: 0x004 (RST)
+    ...
+	\end{verbatim}
+\endgroup
