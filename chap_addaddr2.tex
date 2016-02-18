@@ -744,7 +744,7 @@ def genhmac_addaddr2(k1, k2, r1, r2):
 A final performance evaluation has been executed on the new ADD\_ADDR2 format. The newly introduced HMAC value in the ADD\_ADDR2 packet would trigger cryptographic computations at the receiver. Such computations are highly optimized for fast execution and reduced CPU utilization, but they might represent a problem if triggered at a high rate. 
 By studying the impact of the HMAC calculation for the MPTCP operations, it has been found that this accounts for the 25\% of the overall CPU time spent in generating the SYN/ACK+MP\_JOIN packet \cite{P14}.
 
-The possibility to overload a host's CPU is now enabled with ADD\_ADDR2, where an attacker can forge ADD\_ADDR2 messages with random HMAC and flood the target, so that the latter has to call the \textit{mptcp\_hmac\_sha1()} function repeatedly. Two new Scapy scripts have been developed to perform such flooding with both ADD\_ADDR \cite{add-addr-flood} and ADD\_ADDR2 \cite{add-addr-2-flood} so that it is possible to compare the difference in CPU load when the HMAC calculation is added to the flooding procedure. The \textit{main()} function of the script for the ADD\_ADDR2 flooding is reported in listing \ref{flood2}.
+The possibility to overload a host's CPU is now enabled with ADD\_ADDR2, where an attacker can forge ADD\_ADDR2 messages with random HMAC and flood the target, so that the latter has to call the \textit{mptcp\_hmac\_sha1()} function repeatedly. Two new Scapy scripts have been developed to perform such flooding with both ADD\_ADDR \cite{add-addr-flood} and ADD\_ADDR2 \cite{add-addr-2-flood} so that it is possible to compare the difference in CPU load when the HMAC calculation is added to the flooding procedure at the client. The \textit{main()} function of the script for the ADD\_ADDR2 flooding is reported in listing \ref{flood2}.
 
 \begin{lstlisting}[language=Python, caption=\textit{Scapy flooding tool}, label=flood2]
 def main():
@@ -762,18 +762,31 @@ def main():
     addaddrlist = []
     addaddrlist.append(forge_addaddr(ADVERTISED_IP, SERVER_IP, pktl[0][TCP].dport, CLIENT_IP, pktl[0][TCP].sport, (pktl[0][TCP].ack)+SEQUENCE_OFFSET, (pktl[0][TCP].seq)-SEQUENCE_OFFSET))
     
-    for i in range (0, 1000):
+    print "Preparing"
+    for i in range (0, 10000):
         addaddrlist.append(addaddrlist[0].copy())
-    for i in range (0, 10):
-        print "Sending 1000 ADD_ADDR2 to client"
-        send(addaddrlist, iface=CLIENT_IF, verbose=0)
+    start = time.time()
+    print "Sending"
+    sendpfast(addaddrlist, pps=int(args.floodRate), iface=CLIENT_IF, loop=10000, file_cache=True)
+    end = time.time()
+    print(end - start)
     return
 \end{lstlisting}
 
-The command line used to call the script is identical to the one used in section \ref{reprattack} for the ADD\_ADDR attack simulation. In this case, the script sends 10000 ADD\_ADDR2 packets with random HMAC value (such random value is present in \textit{forge\_addaddr()}, not shown in listing \ref{flood2}).
+The command line used to call the script is identical to the one used in section \ref{reprattack} for the ADD\_ADDR attack simulation, and the network scenario is the same as well. The only difference is the additional argument for the script used to define the sending rate with which Scapy should send the forged ADD\_ADDR(2) packets (\textit{args.floodRate}). A random HMAC value is added to each packet in case of ADD\_ADDR2 (such random value is present in \textit{forge\_addaddr()}, not shown in listing \ref{flood2}).
 
-A separate Python script has been developed together with gnuplot in order to track and visualize the local CPU usage of the client virtual machine process over time \cite{monitor}. The tool simply samples the CPU usage percentage for the UML process from the command \textit{top}.
-The test involved a \textit{netcat} communication between the client and the server, so that the average CPU usage is practically 0\% when no message is being exchanged. 
-The same test has been run ten times to achieve better averaging. The experiment setup used two UMLs each using a single core of the eight i7 2GHz cores available in the physical machine. 256 MB of RAM was assigned to both virtual machines.
-Scapy was able to forge and send ADD\_ADDR packets at a rate of 1183 packets per second, while the more complex ADD\_ADDR2 reached a rate of 1149, meaning a rate drop of around 3\%. Roughly the same performance difference has been observed in the CPU usage at the client in both configurations when flooded with ADD\_ADDR(2) messages: during the flooding procedure, ADD\_ADDR environment produces an average CPU usage of around 3.55\%; the ADD\_ADDR2 case shows an average CPU usage of around 3.67\% instead. 
-This experiment gives only a rough estimation of the impact brought by the HMAC field in case of flooding attacks. The final data shows a limited increase in CPU usage, not pronounced enough to claim that ADD\_ADDR2 introduces any new attacking vector.
+A separate Python script has been developed together with \textit{gnuplot} in order to track and visualize the CPU usage of the client virtual machine process over time, as a percentage of the overall CPU capacity \cite{monitor}. The tool simply samples the CPU usage percentage for the UML process from the command \textit{top} (launched from localhost) a number of times defined by the user and it calculates the average of such samples.
+
+The test involved a \textit{netcat} communication between the client and the server, so that the average CPU usage is practically 0\% when no message is being exchanged. Then, the flooding is executed towards the client (through \textit{tap0}) with different sending rates, from 20000 packets per seconds up until 100000 packets per seconds. Initially, the tests were performed with a top sending rate of around 1000 packets per second, since it appeared to be the highest throughput reachable by Scapy using the function \textit{send()}. For the final experiment, the function \textit{sendpfast()} is used instead: such function adopts \textit{tcpreplay} to drastically increase the sending rate capabilities of Scapy, thus allowing the experiment on ADD\_ADDR(2) flooding.
+Both ADD\_ADDR and ADD\_ADDR2 flooding have been executed, and each configuration has been run five times for better statistics. The targeted virtual machine (the client UML) was assigned to a single core of the eight Intel Core i7-4770S CPUs (3.10GHz) available in the physical machine. 256MB was the amount of assigned RAM. The results of such experiment are shown in graph of figure \ref{fig:floodgraph}.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=\textwidth]{images/flood}
+\caption{Flooding attack for ADD\_ADDR and ADD\_ADDR2}
+\label{fig:floodgraph}
+\end{figure} 
+
+The graph shows how the CPU usage increases almost linearly with respect to the number of received ADD\_ADDR(2) per second. However, for the ADD\_ADDR2 case the CPU usage sightly increases with the respect to the ADD\_ADDR case, as expected because of the additional HMAC calculation performed for each incoming message. With all the different sending rates tested, the average CPU usage increases of 13\% (plus or minus 0,5\%) in case of ADD\_ADDR2 packets.
+
+Even if this experiment gives only a rough estimation of the impact brought by the HMAC field in case of flooding attacks, the final data shows a limited increase in CPU usage, not pronounced enough to claim that ADD\_ADDR2 introduces any new attacking vector. Nevertheless, further tests with different operational environment are advised to further investigate the new format's implementation.
