@@ -3,6 +3,8 @@
 
 This appendix contains the capture file for the ADD\_ADDR attack execution as described in chapter \ref{chap:addaddrattackexecution}. This capture is obtained by monitoring \textit{tap0} (targeted interface) and trimmed to just show the TCP flags and the MPTCP options exchanged in signaling packets.
 
+From the capture file it is possible to find the ADD\_ADDR message received from the attacker (frame 21) and the subsequent SYN+MP\_JOIN message sent by the client to the advertised address 10.1.1.1 (frame 22). Moreover, the last frame (frame 30) shows the RST message sent by the attacker to close the subflow, as that is the last step of the hijacking procedure.
+
 \begingroup
     \fontsize{8pt}{9pt}\selectfont
 	\begin{verbatim}
