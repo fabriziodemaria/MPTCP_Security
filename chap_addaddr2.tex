@@ -46,7 +46,7 @@ The following sections contain an in-depth analysis of the ADD\_ADDR functionali
 \label{hmacinaddaddr}
 The part of code in the Linux Kernel defining the format of every MPTCP options is contained in the following header file: \textit{include/net/mptcp.h}. For each MPTCP option there is a corresponding data structure in this header file that contains all the fields for the option in the right order, format and alignment. The ADD\_ADDR option is defined in the \textit{mp\_add\_addr} struct. A first step towards achieving a full implementation of ADD\_ADDR2 is indeed to add the truncated HMAC field into the ADD\_ADDR message and place it after the optional port, both in case of IPv4 and IPv6 (listing \ref{mpaddaddr}, lines 18 and 23).
 
-\begin{lstlisting}[language=c, caption=\textit{mp\_add\_addr struct}, label=mpaddaddr]
+\begin{lstlisting}[language=c, caption=\textit{mp\_add\_addr} struct, label=mpaddaddr]
 struct mp_add_addr {
 	__u8	kind;
 	__u8	len;
@@ -84,7 +84,7 @@ When the transmission of an ADD\_ADDR2 is triggered, the function \textit{full\_
 In listing \ref{fullmesh} is reported the added code inside \textit{net/mptcp/mptcp\_fullmesh.c} that is used to calculate and store the HMAC value. All the code reported so far addresses the IPv4 advertisement, but IPv6 support is provided throughout the entire set of produced patches.
 It is now important to mention that the ADD\_ADDR2 has been designed as a major update for MPTCP, thus being part of the next version of the protocol: MPTCP version 1. Backward compatibility towards version 0 and ADD\_ADDR has to be guaranteed, meaning that the truncated HMAC is added to the ADD\_ADDR message only if version 1 or higher has been established by both hosts during the initial handshake. More about the newly introduced version control is reported in the next section (section \ref{retrocomp}). It is possible to notice the conditional statement checking that the MPTCP version in use is indeed 1 or greater (listing \ref{fullmesh}, line 2). The actual hashing function adopted is \textit{mptcp\_hmac\_sha1()}; such function, that was already available in the first phases of the MPTCP implementation, has been also modified to properly work with ADD\_ADDR2 (more details about this updated function are reported in section \ref{newhash}). 
 
-\begin{lstlisting}[language=c, caption=\textit{New ADD\_ADDR HMAC calculation (outgoing packet, IPv4)}, label=fullmesh]
+\begin{lstlisting}[language=c, caption=New ADD\_ADDR HMAC calculation (outgoing IPv4 packet), label=fullmesh]
 ...
 if (mpcb->mptcp_ver >= MPTCP_VERSION_1) {
 	u8 mptcp_hash_mac[20];
@@ -105,7 +105,7 @@ The call to HMAC calculation function \textit{mptcp\_hmac\_sha1()} is now examin
 For what regards the message for the HMAC calculation, it is obtained concatenating the address ID (line 10) and the advertised address (line 11). Note that listing \ref{fullmesh} does not include the code for handling the port value in the HMAC. Indeed, port advertisement (which is optional) is not yet part of the current MPTCP implementation in the Linux Kernel. More details about this can be found later in section \ref{portad}. 
 The HMAC calculation produces 160 bits that are saved in the previously allocated placeholder called \textit{mptcp\_hash\_mac} (line 3), whose reference is later saved into the new field in \textit{tcp\_out\_options}, in turn referenced by the pointer \textit{opts} (line 12). The same pointer \textit{opts} is used later on, in the function \textit{mptcp\_options\_write()} (file \textit{net/mptcp/mptcp\_output.c}), in order to retrieve the saved values and construct the \textit{mp\_add\_addr} data structure for the packet sent on wire (listing \ref{mpoutput}).
 
-\begin{lstlisting}[language=c, caption=\textit{Building ADD\_ADDR2 output message}, label=mpoutput]
+\begin{lstlisting}[language=c, caption=Building ADD\_ADDR2 outgoing message, label=mpoutput]
 ...
 mpadd->kind = TCPOPT_MPTCP;
 if (opts->add_addr_v4) {
@@ -132,7 +132,7 @@ The new ADD\_ADDR2 has different lengths with respect to the previous version, s
 
 When the ADD\_ADDR(2) message is received, the length of the received option is checked and it has to match with the expected values, according to the type of message (ADD\_ADDR or ADD\_ADDR2). This check is called in the function \textit{mptcp\_parse\_options()} (listing \ref{badsize}).
 
-\begin{lstlisting}[language=c, caption=\textit{Check ADD\_ADDR size at the receiver, inside \textit{mptcp\_parse\_option()}}, label=badsize]
+\begin{lstlisting}[language=c, caption=Check ADD\_ADDR(2) size at the receiver inside \textit{mptcp\_parse\_option()}, label=badsize]
 ...
 if (!tp)
 	break;
@@ -147,7 +147,7 @@ if (!is_valid_addropt_opsize(tp->mpcb->mptcp_ver,
 
 An issue encountered at this point of development was that the function just mentioned was initially called with no reference to the multipath control block structure where the version of the current MPTCP session is stored (as explained later in the section regarding version control). The MPTCP version is no more passed along in the options following the MP\_CAPABLE exchange, meaning that the value can't be retrieved directly from inspecting the ADD\_ADDR option. A first workaround was to add the version value in the structure containing the received options, named \textit{mptcp\_options\_received}, before passing this structure to the parsing function. In fact, \textit{mptcp\_options\_received} (whose pointer is available in \textit{mptcp\_parse\_option()} but it doesn't appear in the code snippet of listing \ref{badsize}) is created in another portion of code with access to the MPTCP version in use. Anyway, this might be confusing to the developers, since it looks like the MPTCP version value has been indeed present within the options inside the received TCP segment, while it was in reality saved at connection initialization and just copied from the local \textit{mpcb}. The final approach to solve the problem involved slightly more complex changes for the set of function calls related to the parsing of TCP/MPTCP options: as it can be seen in line 5 of listing \ref{badsize}, the \textit{tcp\_sock} (\textit{tp}) structure containing the \textit{mpcb} data for the connection is available inside the final version developed for \textit{mptcp\_parse\_option()}, and the version value \textit{mptcp\_ver} is passed along to the opsize checking function \textit{is\_valid\_addropt\_opsize()}. This required to modify the \textit{tcp\_parse\_options()} function in the TCP stack to pass along the pointer to the \textit{tcp\_sock}, so that it can be retrieved further down within the function calls chain (listing \ref{tcpparse}, last line). Note that the \textit{tp} pointer can be null in certain cases (for example if \textit{tcp\_parse\_options()} is called from \textit{tcp\_timewait\_state\_process()} while the MPTCP session is shutting down), meaning that a null check is needed before calling the validation function: if \textit{tp} is null, it is impossible to retrieve the MPTCP version and the ADD\_ADDR(2) is simply ignored.
 
-\begin{lstlisting}[language=c, caption=\textit{New definition for \textit{tcp\_parse\_options}}, label=tcpparse]
+\begin{lstlisting}[language=c, caption=New definition for \textit{tcp\_parse\_options}, label=tcpparse]
 void tcp_parse_options(const struct sk_buff *skb,
  		       struct tcp_options_received *opt_rx,
  		       struct mptcp_options_received *mopt_rx,
@@ -160,7 +160,7 @@ Regarding the \textit{is\_valid\_addropt\_opsize()} function, it has been develo
 
 After the host that received the ADD\_ADDR(2) packet has verified the correctness of the option's length, the function \textit{mptcp\_handle\_add\_addr()} takes care of verifying the HMAC and triggering the procedures used to add the advertised address, if appropriate. The IPv4 version of the HMAC verification code at the receiver is shown in listing \ref{addaddrinput}, where the HMAC calculated locally is compared with the one received in the ADD\_ADDR2 message with the \textit{memcmp()} in line 8: the ``return'' in line 10 prevents the information from ADD\_ADDR2 to be further processed, if \textit{memcmp()} fails. 
 
-\begin{lstlisting}[language=c, caption=\textit{New ADD\_ADDR HMAC calculation (incoming packet)}, label=addaddrinput]
+\begin{lstlisting}[language=c, caption=New ADD\_ADDR HMAC calculation (incoming IPv4 packet), label=addaddrinput]
 ...
 mptcp_hmac_sha1((u8 *)&mpcb->mptcp_rem_key,
 		(u8 *)no_key,
@@ -176,7 +176,7 @@ if (memcmp(hash_mac_check, recv_hmac, 8) != 0)
 
 It is possible to notice that the code inside \textit{mptcp\_handle\_add\_addr()} is similar to the one used at the sender (\ref{fullmesh}), with the local key used for HMAC computation instead of the remote key; moreover, for this code that runs at the receiver, the port value is present and processed if detected inside the ADD\_ADDR(2) option, as it explained later in the following sections on port advertisement and the new hashing function's implementation.
 
-\subsection{MPTCP version control}
+\subsection{Version control}
 \label{retrocomp}
 ADD\_ADDR2 is substantial modification of an important design aspect of the MPTCP protocol. ADD\_ADDR2 is indeed non interoperable with the current stable implementation of MPTCP version 0, since the augmented length of the option would cause the older network stack to discard the option right away.
 ADD\_ADDR2 is considered part of the new MPTCP protocol version number 1, whose implementation has to guarantee backward compatibility. For this purpose, a version control mechanism has to be in place so that hosts can agree on the version to use upon initial handshake and successively operate according to such decision. Since ADD\_ADDR2 is the first step towards the implementation of the new features for MPTCP version 1, no version control mechanism was provided at the beginning of the development phase for ADD\_ADDR2: version 0 was just an fixed value parsed into each MP\_CAPABLE option (option's format is shown in figure \ref{fig:opt_capable}) with no logic attached.
@@ -197,7 +197,7 @@ It is possible to identify three main phases in the version agreement procedure,
 
 In developing MPTCP version control mechanism, a problem was related to the fact that the user can change the version in use at any time via a \textit{sysctl} command, meaning that it is possible to change the version in the middle of an MPTCP connection. It is not desirable to change such configuration during the MP\_CAPABLE exchange: it is possible that the first MP\_CAPABLE is retransmitted to the passive opener (following standard TCP retransmission procedures), and the version number inside retransmitted packets must not change from the one used during the very first transmission. For this reason, the configured \textit{sysctl} value is read and initialized for the MPTCP connection at an early stage, namely when \textit{mptcp\_enable\_sock()} (in \textit{net/mptcp/mptcp\_ctrl.c}) is called; there, the value is saved into the newly introduced field \textit{mptcp\_ver} inside the \textit{tcp\_sock} structure (listing \ref{verphase0}, line 6).
 
-\begin{lstlisting}[language=c, caption=\textit{MPTCP version agreement, initializing sysctl value}, label=verphase0]
+\begin{lstlisting}[language=c, caption=MPTCP version agreement (initializing \textit{sysctl} value), label=verphase0]
 ...
 void mptcp_enable_sock(struct sock *sk)
 {
@@ -212,7 +212,7 @@ The same initialization procedure is executed when the MP\_CAPABLE packet is rec
 
 The function \textit{mptcp\_reqsk\_new\_mptcp()} (in \textit{net/mptcp/mptcp\_ctrl.c}) is called when the SYN+MP\_CAPABLE is received and the code in listing \ref{verphase2} is executed to set the highest version available that is not greater than the one advertised by the client. The \textit{mopt} pointer points to the structure containing the received MPTCP options from the client, while \textit{mtreq} is a pointer to the \textit{mptcp\_request\_sock} structure, where the final version chosen by the server is saved for now.
 
-\begin{lstlisting}[language=c, caption=\textit{MPTCP version agreement, phase 2}, label=verphase2]
+\begin{lstlisting}[language=c, caption=MPTCP version agreement (phase 2), label=verphase2]
 	if (mopt->mptcp_ver >= tp->mptcp_ver)
 		mtreq->mptcp_ver = tp->mptcp_ver;
 	else
@@ -221,7 +221,7 @@ The function \textit{mptcp\_reqsk\_new\_mptcp()} (in \textit{net/mptcp/mptcp\_ct
 
 The last step of the version agreement involves the final check performed by the client on the version value sent back by the server: it has to be equal or less then the one originally advertised in the first MP\_CAPABLE message. Such check is added to the function \textit{mptcp\_rcv\_synsent\_state\_process()} (in \textit{net/mptcp/mptcp\_input.c}): \textit{tcp\_sk(sk)} is used to obtain the pointer to the \textit{tcp\_sock} structure, where \textit{mptcp\_ver} is retrieved and compared to the server's MPTCP version residing in \textit{mopt->mptcp\_ver} (listing \ref{verphase3}). If the comparison fails, the \textit{fallback} label is hit to trigger the fallback procedure to regular TCP.
 
-\begin{lstlisting}[language=c, caption=\textit{MPTCP version agreement, phase 3}, label=verphase3]
+\begin{lstlisting}[language=c, caption=MPTCP version agreement (phase 3), label=verphase3]
 	if (mopt->mptcp_ver > tcp_sk(sk)->mptcp_ver)
 		/* TODO Consider adding new MPTCP_INC_STATS entry */
 		goto fallback;
@@ -229,11 +229,11 @@ The last step of the version agreement involves the final check performed by the
 
 After these messages have been exchanged, if a proper version has been agreed, both hosts will eventually call \textit{mptcp\_create\_master\_sk()} and in turns \textit{mptcp\_alloc\_mpcb()} with the information about the version, so that it is also saved in the MPTCP control block \textit{mptcp\_cb} for the session. From the multipath control block, the MPTCP version in use can be retrieved to process the ADD\_ADDR(2) option accordingly.
 
-\subsection{The MPTCP hashing function}
+\subsection{The hashing function}
 \label{newhash}
 The current implementation of MPTCP in the Linux Kernel adopts a specific function for all the HMAC-SHA1 calculations required by the protocol: it is named \textit{mptcp\_hmac\_sha1()} and it is placed inside \textit{net/mptcp/mptcp\_ctrl.c}. Before the introduction of ADD\_ADDR2, only the MP\_JOIN option required such functionality, with a fixed scheme regarding the type and length of the key and message used as input for the HMAC algorithm: the key is always the concatenation of the two 64-bit MPTCP keys exchanged via the MP\_CAPABLE option, while the message is always the combination of two random nonces of 32 bits each. For this reason, the function has been designed to accept such input values with no flexibility on the length and number of the byte strings passed along for the HMAC computation. The old prototype for \textit{mptcp\_hmac\_sha1()} is shown in listing \ref{oldhmac}.
 
-\begin{lstlisting}[language=c, caption=\textit{Prototype for the old \textit{mptcp\_hmac\_sha1() function}}, label=oldhmac]
+\begin{lstlisting}[language=c, caption=Prototype for the old \textit{mptcp\_hmac\_sha1() function}, label=oldhmac]
 void mptcp_hmac_sha1(u8 *key_1, u8 *key_2, u8 *rand_1, u8 *rand_2, 
                      u32 *hash_out);
 \end{lstlisting}
@@ -241,9 +241,9 @@ void mptcp_hmac_sha1(u8 *key_1, u8 *key_2, u8 *rand_1, u8 *rand_2,
 The old implementation of the function concatenates the first 8 bytes pointed by \textit{key\_1} and \textit{key\_2} to get the 16 bytes key, and it concatenates the first 4 bytes of \textit{rand\_1} and \textit{rand\_2} to originate the 8 bytes message. The \textit{hash\_out} pointers points to the placeholder for the final result of the calculation.
 
 
-With ADD\_ADDR2 the requirements for the HMAC calculation change. The hashing key follows the same configuration of the MP\_JOIN case, while the message is now the concatenation of some of the fields in the ADD\_ADDR2 option, namely the single-byte address ID, the advertised IP address that can be a 4-bytes IPv4 address or a 16-bytes IPv6 address and, if present, the 2-bytes port value. Instead of implementing a separate hashing function for dealing with this case,  it was decided to extend the current one in order to accept an arbitrary number of messages of arbitrary length (checking that the total length doesn't exceed a certain limit). For what concerns the HMAC key, that part is expected not to change for future usage in MPTCP since it is most likely based on the two MPTCP keys exchanged during the initial handshake. For the message part, the new function has been developed using the C functionality for variable argument lists based on \textit{va\_list}. Only the first part of the new hashing function's implementation is changed, since it is the one that handles the input key and message passed as argument. In this first part, shown in listing \ref{newhmac}, the \textit{input} array is prepared for the actual cryptographic functions called in the second part, the latter being omitted in this paper.
+With ADD\_ADDR2 the requirements for the HMAC calculation change. The hashing key follows the same configuration of the MP\_JOIN case, while the message is now the concatenation of some of the fields in the ADD\_ADDR2 option, namely the single-byte address ID, the advertised IP address that can be a 4-bytes IPv4 address or a 16-bytes IPv6 address and, if present, the 2-bytes port value. Instead of implementing a separate hashing function for dealing with this case,  it was decided to extend the current one in order to accept an arbitrary number of messages of arbitrary length (checking that the total length doesn't exceed a certain limit). For what concerns the HMAC key, that part is expected not to change for future usage in MPTCP since it is most likely based on the two MPTCP keys exchanged during the initial handshake. For the message part, the new function has been developed using the C functionality for variable argument lists based on \textit{va\_list} (listing \ref{newhmac}, line 2). Only the first part of the new hashing function's implementation is changed, since it is the one that handles the input key and message passed as argument. In this first part, shown in listing \ref{newhmac}, the \textit{input} array is prepared for the actual cryptographic functions called in the second part, the latter being omitted in this paper.
 
-\begin{lstlisting}[language=c, caption=\textit{Implementation for the new \textit{mptcp\_hmac\_sha1() function (first part)}}, label=newhmac]
+\begin{lstlisting}[language=c, caption=Implementation for the new \textit{mptcp\_hmac\_sha1() function (first part)}, label=newhmac]
 void mptcp_hmac_sha1(u8 *key_1, u8 *key_2, 
                      u32 *hash_out, int arg_num, ...)
 {
@@ -285,17 +285,17 @@ void mptcp_hmac_sha1(u8 *key_1, u8 *key_2,
 }
 \end{lstlisting}
 
-From line 15 to line 19 it is possible to verify that the 16 bytes' key is properly xored with the first 16 bytes of the array as required for the proper HMAC calculation. From line 23 to line 29 the "for" loop scans the function arguments by retrieving two subsequent arguments at a time: the first is an integer representing the length of the currently processed message component, while the second is the pointer to the actual message component. After checking that the total length of the concatenated message components is not too long, the current component is properly parsed into the \textit{input} array, before advancing the index accordingly and starting a new "for" loop. The last part of the code snippet shows some padding additions required by the hashing function's implementation at later stages. 
-To sum up, the new API requires to pass along the following set of information (in this order): pointer to the first 8 bytes of the key, pointer to the following 8 bytes of the key, pointer to the 20-byte placeholder where to save the final result of the HMAC calculation, the number of HMAC message's parts that have to be processed and, finally, the pointers to the various components for the final HMAC input message; each of the pointers to a message components has to be preceded by an integer determining the byte-length of the component itself.
+From line 15 to line 19 it is possible to verify that the 16 bytes' key is properly xored with the first 16 bytes of the \textit{input} array as required for the proper HMAC calculation. From line 23 to line 29 the ``for loop'' scans the function arguments by retrieving two subsequent arguments at a time: the first is an integer representing the length of the currently processed message component, while the second is the pointer to the actual message component. After checking that the total length of the concatenated message components is not too long, the current component is properly parsed into the \textit{input} array, before advancing the index accordingly and starting a new loop's iteration. The last part of the code snippet shows some padding additions required by the hashing function's implementation at later stages. 
+To sum up, the new API requires to pass along the following set of information (in this order): pointer to the first 8 bytes of the key, pointer to the following 8 bytes of the key, pointer to the 20-byte placeholder where to save the final result of the HMAC calculation, the number of HMAC message's parts that have to be processed and, finally, the pointers to the various components for the final HMAC input message, where each of the pointers to a message components has to be preceded by an integer determining the byte-length of the component itself.
 
-A few considerations should be made about the total length of the final HMAC input message. From the code on listing \ref{newhmac} it can be seen that the message shouldn't be longer than 61 bytes: this number comes from the limit value 125 in line 26 minus the initial \textit{index} value of 64 in line 22. The value 64 indicates that only the second half of the \textit{input} array is reserved for the message, being the first part used for the key instead. Regarding the limit value 125, it has been chosen so that, even in the worst case, the first bit after the message can be set to one (actually, the entire byte after the last byte of the message is set to 0x80), keeping the very last two fields in the 128-bytes \textit{input} array reserved to the length value composed as the sum of 512 (bits composing the first half of the input array) plus the number of bits composing the actual HMAC message. Such configuration is required by the subsequent cryptographic functions (omitted) to work. 
+A few considerations should be made about the total length of the final HMAC input message. From the code on listing \ref{newhmac} it can be seen that the message shouldn't be longer than 61 bytes: this number comes from the limit value 125 in line 26 minus the initial \textit{index} value of 64 in line 22. The value 64 indicates that only the second half of the \textit{input} array is reserved for the message, being the first part used for the key instead. Regarding the limit value 125, it has been chosen so that, even in the worst case, the first bit after the message can be set to one (actually, the entire byte after the last byte of the message is set to 0x80), keeping the very last two fields in the 128-bytes \textit{input} array reserved for storing the length value composed as the sum of 512 (bits composing the first half of the input array) plus the number of bits composing the actual HMAC message. Such configuration is required by the subsequent cryptographic functions (omitted) to work. 
 61 bytes for the HMAC message is a very conservative value for the MPTCP case. As of now, the longest possible message to be processed for ADD\_ADDR2 would be of length 19 bytes: 1 byte for the address ID, 16 bytes for the IPv6 address and two more bytes for the port value.
-Moreover, it has been decided to introduce a BUG\_ON macro as a check for the message length, so that the whole system would crash in case the message is too long. Even if crashing the whole Kernel in case of a failure in MPTCP might seem a too drastic approach, the reasoning behind it is that such input messages does not depends on any external input: in other words, the number and length of the message components passed to the hashing function are hardcoded inside the Kernel code and they are within the limits, meaning that such BUG\_ON procedure will never be called during normal execution of the current implementation. Only new uses of the hashing function introduced by developers during development phase could introduce a wrong usage of the new API: during the development phase it is reasonable to crash the whole system if something goes wrong, providing all the means for the developers to notice and address the problem.
+Moreover, it has been decided to introduce a BUG\_ON macro as a check for the message length, so that the whole system would crash in case the message is too long. Even if crashing the whole Kernel in case of a failure in MPTCP might seem a too drastic approach, the reasoning behind it is that such input messages does not depends on any external input: in other words, the number and length of the message components passed to the hashing function are hardcoded inside the Kernel code and they are within the limits, meaning that such BUG\_ON procedure will never be called during normal execution of the current implementation. Only new uses of the hashing function introduced by Kernel developers could introduce a wrong usage of the new API: during the development phase it is reasonable to crash the whole system if something goes wrong, providing all the means for the developers to notice and address the problem.
 
-Extending the hashing function used in MPTCP as just described has been the final solution adopted to implement ADD\_ADDR2. Nevertheless, another important investigation has been performed about an alternative way to achieve HMAC calculation within MPTCP. Such alternative takes into consideration the usage of the Crypto-API framework, that is already available in the Linux Kernel. Code re-usability is a fundamental aspect of Kernel development, and the Crypto module offers all the most popular block ciphers and hash functions computations, including the HMAC-SHA1. Such API has been introduced in the Linux Kernel version 2.5.45 \cite{cryptoinkernel}, and it is now considered very stable and optimized for fast performances. 
+Extending the hashing function used in MPTCP as just described has been the final solution adopted to implement ADD\_ADDR2. Nevertheless, another important investigation has been performed about an alternative way to achieve HMAC calculation within MPTCP. Such alternative takes into consideration the usage of the Crypto API framework, that is already available in the Linux Kernel. Code re-usability is a fundamental aspect of Kernel development, and the Crypto module offers all the most popular block ciphers and hash functions computations, including the HMAC-SHA1. Such API has been introduced in the Linux Kernel version 2.5.45 \cite{cryptoinkernel}, and it is now considered very stable and optimized for fast performances. 
 A patch to test the behavior of Crypto APIs in MPTCP has been developed and tested \cite{cryptopatch1} \cite{cryptopatch2}. The \textit{mptcp\_hmac\_sha1()} API would be still extended to achieve better flexibility in managing the input message components, but it would end up being a simple wrapper calling the Crypto API functions, as shown in listing \ref{crypto}.
 
-\begin{lstlisting}[language=c, caption=\textit{\textit{mptcp\_hmac\_sha1() using Linux Kernel Crypto API}}, label=crypto]
+\begin{lstlisting}[language=c, caption=\textit{mptcp\_hmac\_sha1()} using Linux Kernel Crypto APIs, label=crypto]
 void mptcp_hmac_sha1(u8 *key_1, u8 *key_2, u8 *hash_out, int arg_num, ...)
 {
 	struct mptcp_hmacsha1_pool *sp;
@@ -346,7 +346,7 @@ clear_hmac_noput:
 Some of the Crypto functions' operations are straightforward: from a high level prospective, \textit{crypto\_hash\_setkey()} sets the HMAC-SHA1 key, \textit{crypto\_hash\_update()} automatically adds component to the HMAC-SHA1 message every time it is called and finally the \textit{crypto\_hash\_final()} computes the HMAC-SHA1 value.
 However, there is an important initialization part that is required for proper functioning of such Crypto functions, that is performed at the very beginning of the connection establishment, i.e. in the \textit{tcp\_init\_sock()} function (in \textit{net/ipv4/tcp.c}). The reason why the initialization part is performed at an early stage during connection establishment instead of just before the need to compute the HMAC value is that the Crypto library is not designed to work in an atomic context, since it involves memory allocations with the option GFP\_KERNEL: such option allows the allocation function to sleep and wait for available memory if that is not available immediately. However, sleeping is not allowed in atomic context execution, which is the context in use when processing the MPTCP options. The function \textit{tcp\_init\_sock()} is not called in an atomic context, and it is a viable option where to insert the allocation function needed for the Crypto library. The Crypto function to allocate the required memory and algorithms is called \textit{crypto\_alloc\_hash()}, and it takes as first argument the kind of hashing algorithm to use, which in MPTCP case is: \textit{"hmac(sha1)"} (listing \ref{cryptoalloc}, line 3).
 
-\begin{lstlisting}[language=c, caption=\textit{\textit{Initializing the Crypto-API framework}}, label=cryptoalloc]
+\begin{lstlisting}[language=c, caption=Initializing the Crypto-API framework, label=cryptoalloc]
 	struct crypto_hash *hash;
 
 	hash = crypto_alloc_hash("hmac(sha1)", 0, CRYPTO_ALG_ASYNC);
@@ -355,12 +355,12 @@ However, there is an important initialization part that is required for proper f
 	per_cpu(mptcp_hmacsha1_pool, cpu).hmacsha1_desc.tfm = hash;
 \end{lstlisting}
 
-The \textit{crypto\_hash} structure is needed by the subsequent Crypto functions present in \textit{mptcp\_hmac\_sha1()}; it is saved in the \textit{per\_cpu} structure called \textit{mptcp\_hmacsha1\_pool} and it is retrieved from the same structure as shown in line 11 of listing \ref{crypto}. The "per\_cpu" usage allows for better performance in a multi-core environment.
+The \textit{crypto\_hash} structure is needed by the subsequent Crypto functions present in \textit{mptcp\_hmac\_sha1()}; it is saved in the ``per\_cpu'' structure called \textit{mptcp\_hmacsha1\_pool} and it is retrieved from the same structure as shown in line 11 of listing \ref{crypto}. The ``per\_cpu'' usage allows for better performance in a multi-core environment.
 
-This preallocation solution, that calls \textit{crypto\_alloc\_hash()} early on in the MPTCP operational flow, is not enough to guarantee correct functioning of the Crypto framework when the call to \textit{crypto\_hash\_setkey()} is also needed (listing \ref{crypto}, line 20). In fact, by inspecting the function to set the key value, it is possible to find cases in which memory allocations of kind GFP\_KERNEL are executed. Since the key has to be set while passing the ADD\_ADDR(2) option in atomic context, it cannot be guaranteed with sleeping will never be triggered thus causing Kernel crash. To cope with this problem, further investigation has been performed to verify what could cause a GFP\_KERNEL allocation in \textit{crypto\_hash\_setkey()}. If the input key is not aligned then another function \cite{shash61} is called for alignment purposes and the alignment process itself can cause sleeping \cite{shash43}. In order to solve also this problem, an additional preallocation as been added right after the  \textit{crypto\_alloc\_hash()}, and shown in listing \ref{keyprealloc}: here, the alignment procedure is performed on the placeholder for the key, whose content might be set later during the MPTCP connection. This preallocation is possible because the length of the key in MPTCP is fixed (\textit{keylen} always has a fixed value of 16).
+This preallocation solution, that calls \textit{crypto\_alloc\_hash()} early on in the MPTCP operational flow, is not enough to guarantee correct functioning of the Crypto framework when the call to \textit{crypto\_hash\_setkey()} is also needed (listing \ref{crypto}, line 20). In fact, by inspecting the function to set the key value, it is possible to find cases in which memory allocations of kind GFP\_KERNEL are executed. Since the key has to be set while parsing the ADD\_ADDR(2) option in atomic context, it cannot be guaranteed that sleeping will never be triggered thus causing Kernel crash. To cope with this problem, further investigation has been performed to verify what could cause a GFP\_KERNEL allocation in \textit{crypto\_hash\_setkey()}. If the input key is not aligned then another function \cite{shash61} is called for alignment purposes and the alignment process itself can cause sleeping \cite{shash43}. In order to solve also this problem, an additional preallocation has been added right after the  \textit{crypto\_alloc\_hash()}, and shown in listing \ref{keyprealloc}: here, the alignment procedure is performed on the placeholder for the key, whose content might be set later during the MPTCP connection. This preallocation is possible because the length of the key in MPTCP is fixed (\textit{keylen} always has a fixed value of 16).
 Also the pointer to the aligned placeholder is added to the \textit{mptcp\_hmacsha1\_pool} struct and retrieved in \textit{mptcp\_hmac\_sha1()} as shown in \ref{crypto}, line 15. 
 
-\begin{lstlisting}[language=c, caption=\textit{\textit{Preallocating an aligned placeholder for the HMAC key}}, label=keyprealloc]
+\begin{lstlisting}[language=c, caption=Preallocating an aligned placeholder for the HMAC key, label=keyprealloc]
 ...
 /* Allocating aligned key_placeholder */
 alignmask = crypto_hash_alignmask(hash);
@@ -373,14 +373,14 @@ per_cpu(mptcp_hmacsha1_pool, cpu).key_placeholder = alignbuffer;
 ...
 \end{lstlisting}
 
-Despite all the precautions adopted in the process, using the Crypto library in the atomic context of the network stack is not a supported out of the box and it is not advisable to deploy such solution. The investigation about the usage of the Crypto-API in the MPTCP implementation stopped at this point, but the entire work and related patches have been made available for future references \cite{cryptopatch1} \cite{cryptopatch2}. If the Crypto framework is updated to work in atomic context, then its usage in MPTCP would be the most likely the best option. Another possibility is to study all the possible paths and functions that can be reached by \textit{crypto\_hash\_setkey()} to make sure that all the required memory allocations have been already taken care of before entering the atomic context. For now, the separate function \textit{mptcp\_hmac\_sha1()} made available in MPTCP is considered the best solution for the cryptographic calculation within the new protocol.
+Despite all the precautions adopted in the process, using the Crypto library in the atomic context of the network stack is not a supported out of the box and it is not advisable to deploy such solution. The investigation about the usage of the Crypto-API in the MPTCP implementation stopped at this point, but the entire work and related patches have been made available for future references \cite{cryptopatch1} \cite{cryptopatch2}. If the Crypto framework is updated to work in atomic context, then its usage in MPTCP would be most likely the best option. Another possibility is to study all the possible paths and functions that can be reached by \textit{crypto\_hash\_setkey()} to make sure that all the required memory allocations have been already taken care of before entering the atomic context. For now, the separate function \textit{mptcp\_hmac\_sha1()} made available in MPTCP is considered the best solution for the cryptographic calculation within the new protocol.
 
 \subsection{Port advertisement}
 \label{portad}
-Port advertisement in ADD\_ADDR(2) is possible according to RFC specifications but it is only partially supported by the implementation of MPTCP for the Linux Kernel. In fact, the MPTCP in Linux Kernel is currently able to properly adopt port values advertised in the incoming ADD\_ADDR(2) messages, but there is no code that allows to add the port field in the outgoing messages.
+Port advertisement in ADD\_ADDR(2) is possible according to RFC specifications but it is only partially supported by the current implementation of MPTCP for the Linux Kernel. In fact, the MPTCP in Linux Kernel is currently able to properly adopt port values advertised in the incoming ADD\_ADDR(2) messages, but there is no code that allows to add the port field in the outgoing messages.
 Portions of the code used to process incoming ADD\_ADDR(2) messages is now reported in listing \ref{portreceiver} (IPv4 case is shown).
 
-\begin{lstlisting}[language=c, caption=\textit{Handling port field in ADD\_ADDR2 at the receiver}, label=portreceiver]
+\begin{lstlisting}[language=c, caption=Handling port field in ADD\_ADDR2 at the receiver, label=portreceiver]
 ...
 if (mpadd->ipver == 4) {
     ...
@@ -408,12 +408,12 @@ if (mpadd->ipver == 4) {
 ...
 \end{lstlisting}
 
-It is possible to notice that the port field is identified by inspecting the actual length of the ADD\_ADDR(2) message according to the MPTCP version in use. If the length of the option is equal to \textit{MPTCP\_SUB\_LEN\_ADD\_ADDR4\_VER1 + 2}, then the port value is present together with the advertised IPv4 address (similar code is in place for the IPv6 case): in this case, the \textit{msg\_parts} is set to 3 in order to include the port in the HMAC calculation performed by the call to \textit{mptcp\_hmac\_sha1()}, (whose API is explained in section \ref{newhash}). A similar length check is performed to save the port value found in the ADD\_ADDR(2) option, if present (line 22). 
+It is possible to notice that the port field is identified by inspecting the actual length of the ADD\_ADDR(2) message according to the MPTCP version in use. If the length of the received ADD\_ADDR2 option is equal to \textit{MPTCP\_SUB\_LEN\_ADD\_ADDR4\_VER1 + 2}, then the port value is present together with the advertised IPv4 address (similar code is in place for the IPv6 case): in this case, the \textit{msg\_parts} is set to 3 in order to include the port in the HMAC calculation performed by the call to \textit{mptcp\_hmac\_sha1()}, (whose API is explained in section \ref{newhash}). A similar length check is performed to save the port value found in the ADD\_ADDR(2) option, if present (line 22). 
 
-In the previous section it has been mentioned that the port advertisement is not yet supported at the sender (and that can be checked by inspecting listings \ref{fullmesh} and \ref{mpoutput} for the outgoing packets generation). 
-However, in order to properly test all the patches developed during the thesis work, port advertisement support has been partially implemented to test this functionality. If the Linux Kernel intends to announce an IP address, the first function taking care of processing the new provided address and preparing all the fields for ADD\_ADDR(2) is the following: \textit{full\_mesh\_addr\_signal()} (in \textit{net/mptcp/mptcp\_fullmesh.c}). There, the fields of interest, including the port in this case, are saved into the \textit{opts} pointer (\textit{tcp\_out\_options} struct) and later retrieved in \textit{mptcp\_options\_write()}. In \textit{mptcp\_options\_write()}, a newly introduced flag bit in \textit{opts} called \textit{add\_addr\_port} would be used to determine if a port value has indeed to be written in the outgoing ADD\_ADDR(2) message. The actual "write" function in \textit{mptcp\_options\_write()} with port advertisement support would look like the one in listing \ref{outport} (IPv4 case shown). The new code can be compared with listing \ref{mpoutput}, the latter being much simpler without the check of the port value.
+In the previous section it has been mentioned that the port advertisement is not yet supported at the sender (and that can be checked by inspecting listings \ref{fullmesh} and \ref{mpoutput} for the outgoing packets processing). 
+However, in order to properly test all the patches developed during the thesis work, port advertisement support has been partially implemented to test this functionality. If the Linux Kernel intends to announce an IP address, the first function taking care of processing the new provided address and preparing all the fields for ADD\_ADDR(2) is the following: \textit{full\_mesh\_addr\_signal()} (in \textit{net/mptcp/mptcp\_fullmesh.c}). There, the fields of interest, including the port in this case, are saved into the \textit{opts} pointer (\textit{tcp\_out\_options} struct) and later retrieved in \textit{mptcp\_options\_write()}. In \textit{mptcp\_options\_write()}, a newly introduced flag bit in \textit{opts} called \textit{add\_addr\_port} would be used to determine if a port value has indeed to be written in the outgoing ADD\_ADDR(2) message. The actual ``write'' function in \textit{mptcp\_options\_write()} with port advertisement support would look like the one in listing \ref{outport} (IPv4 case shown). The new code can be compared with listing \ref{mpoutput}, the latter being much simpler without the check of the port value.
 
-\begin{lstlisting}[language=c, caption=\textit{Code to write the outgoing ADD\_ADDR(2) packet, with added support for the port value}, label=outport]
+\begin{lstlisting}[language=c, caption=Code to build the outgoing ADD\_ADDR(2) packet with added support for the port value, label=outport]
 	...
 	mpadd->kind = TCPOPT_MPTCP;
 	if (opts->add_addr_v4) {
@@ -474,7 +474,7 @@ For example, in the testing scenario adopted for the thesis work, the Timestamp 
 
 Eventually, an intermediate approach has been adopted for the new ADD\_ADDR2 format: only if an IPv6 is advertised, then all the other MPTCP options in the packet are not added (regular TCP options are not affected). This is done in \textit{mptcp\_established\_options()} (in \textit{ net/mptcp/mptcp\_output.c}), where outgoing options are processed in sequence: by checking the version of the advertised IP address, processing the ADD\_ADDR(2) packet information for the outgoing packet, and then reaching ``return'' in the IPv6 case, so that no other options are processed in the function (listing \ref{ipv6}).
 
-\begin{lstlisting}[language=c, caption=\textit{In IPv6 case, MPTCP options are not added if ADD\_ADDR2 is present}, label=ipv6]
+\begin{lstlisting}[language=c, caption=Other MPTCP options are not added to the outgoing packet if ADD\_ADDR2 is present (IPv6 case only), label=ipv6]
 ...
 if (unlikely(mpcb->addr_signal) && mpcb->pm_ops->addr_signal) {
 	mpcb->pm_ops->addr_signal(sk, size, opts, skb);
@@ -525,9 +525,9 @@ The new draft introduces changes that require future modification of the current
 A minor RFC Errata has been sent regarding the document \textit{Analysis of Residuals Threats and Possible Fixes for Multipath TCP (MPTCP)} (\rfc{7430}), since a wrong classification has been assigned to the SYN/JOIN attack in section 6. Such attack is not a \textit{partial-time on-path eavesdropper} but the type is \textit{partial-time on-path active attacker} \cite{errata}.
 
 \subsubsection{Nimai Scapy tool}
-The Scapy tool with MPTCP support (found at \textit{https://github.com/nimai/mptcp-scapy}) that has been used to perform all the attacking tests have been slightly modified to make it compatible with the new format for ADD\_ADDR2. In this way it was possible to test the new packet format and verify the correct functioning of the implemented patches (as shown in the following section \ref{exp}, \textit{Experimental evaluation}). It was sufficient to add the new truncated HMAC field in the class definition for the ADD\_ADDR messages, found in \textit{scapy/layers/mptcp.py}, as shown in listing \ref{scapy2} at line 11 (option with no port field) and line 23 (option with the port field).
+The Scapy tool with MPTCP support (found at \href{https://github.com/nimai/mptcp-scapy}{\textit{https://github.com/nimai/mptcp-scapy}}) that has been used to perform all the attacking tests have been slightly modified to make it compatible with the new format for ADD\_ADDR2. In this way it was possible to test the new packet format and verify the correct functioning of the implemented patches (as shown in the following section \ref{exp}, \textit{Experimental evaluation}). It was sufficient to add the new truncated HMAC field in the class definition for the ADD\_ADDR messages, found in \textit{scapy/layers/mptcp.py}, as shown in listing \ref{scapy2} at line 11 (option with no port field) and line 23 (option with the port field).
 
-\begin{lstlisting}[language=Python, caption=\textit{Scapy ADD\_ADDR2 class definition}, label=scapy2]
+\begin{lstlisting}[language=Python, caption=Scapy ADD\_ADDR2 class definition, label=scapy2]
 ...
 class MPTCP_AddAddr(MPOption):
     name = "Multipath TCP Add Address"
@@ -569,23 +569,23 @@ Every single step of the development process has been verified with experimental
 The MPTCP version control works independently from the subsequent number of subflows and interfaces configuration at the hosts, so it has been tested in a single network scenario (the ``standard'' one shown in section \ref{envsetup}). All the combinations of version advertisements have been tested to make sure that version 1 is established only if available at both hosts. The \textit{sysctl} value used to set the MPTCP version by the system administrator has been constrained to accept only 0 or 1 values for the time being. Moreover, tests have been setup to make sure that the version chosen for the very first MP\_CAPABLE packet is not changed upon retransmission. As explained in section \ref{retrocomp}, in order to cope with this case the \textit{sysctl} value is read early on during initialization of the session and saved inside the \textit{tcp\_sock} data structure for the whole duration of the MPTCP connection. In order to make sure this solution works as expected, proper \textit{iptables} rules have been set at localhost to drop the SYN/ACK packets from the server UML, thus triggering the SYN retransmission at the client UML: 
 
 \begin{verbatim}
-sudo iptables -I FORWARD -p tcp --tcp-flags ALL SYN,ACK -j DROP
+	sudo iptables -I FORWARD -p tcp --tcp-flags ALL SYN,ACK -j DROP
 \end{verbatim}
 
 During the retransmission time, the \textit{sysctl} command has been called to change the MPTCP version number, and it was indeed verified that such change didn't apply to the retransmitted packets; in fact, the updated MPTCP version number would be adopted only upon the creation of a new MPTCP connection. 
 Another test related to the MPTCP version control was to establish a communication between two hosts running two different Linux Kernel images, one with the MPTCP version control in place, and the second one with the older code that simply advertises version 0 and does not support ADD\_ADDR2. Interoperability has been confirmed, since the version agreement settles to 0 and the older version of ADD\_ADDR is used by both parties.
 
 \subsubsection{Hashing function}
-The modifications to the \textit{mptcp\_hmac\_sha1()} function required a deep understanding and evaluation of the correctness of the values produced by the HMAC-SHA1 algorithm. At first, to make sure that the enhanced version of the function was working as expected, MPTCP sessions have been established with older version of the MPTCP kernel to verify that the HMAC values were verified properly by both implementations. Later, the \textit{openssl} tool have been used to calculate the HMAC-SHA1 value of any input key and message in hex format, in order to have a reference comparison tool to verify that the operations works as expected, for both the new hashing function and the old one. The \textit{openssl} tool is used with the following command in the terminal, with \textit{<hex message>} and \textit{<hex key>} to be replaced with the desired hex values:
+The modifications to the \textit{mptcp\_hmac\_sha1()} function required a deep understanding and evaluation of the correctness of the values produced by the HMAC-SHA1 algorithm. At first, to make sure that the enhanced version of the function was working as expected, MPTCP sessions have been established with older version of the MPTCP Kernel to verify that the HMAC values were verified properly by both implementations. Later, the \textit{openssl} tool have been used to calculate the HMAC-SHA1 value of any input key and message in hex format, in order to have a reference comparison tool to verify that the operations works as expected, for both the new hashing function and the old one. The \textit{openssl} tool is used with the following command in the terminal, with \textit{<hex message>} and \textit{<hex key>} to be replaced with the desired hex values:
 
 \begin{verbatim}
-echo -n ‘<hex message>’ | xxd -r -p | \
-openssl dgst -sha1 -mac HMAC -macopt hexkey:<hex key>
+	echo -n ‘<hex message>’ | xxd -r -p | \
+	openssl dgst -sha1 -mac HMAC -macopt hexkey:<hex key>
 \end{verbatim}
  
 The correct functioning of this command line has been verified by running some test cases found in \rfc{2202} and verifying the output.
 
-The same tool was used to verify the correctness of the values retrieved using the Crypto-APIs in MPTCP. This framework turned out to be incompatible with atomic context executions, meaning that it can't be used safely while processing MPTCP options in the network stack. Nevertheless, and experimental evaluation of such configuration has been carried out, by using a preallocation mechanism to cope with the atomic execution problem (as explained in \ref{newhash}). 
+The same tool was used to verify the correctness of the values retrieved using the Crypto-APIs in MPTCP. This framework turned out to be incompatible with atomic context executions, meaning that it can't be used safely while processing MPTCP options in the network stack. Nevertheless, an experimental evaluation of such configuration has been carried out, by using a preallocation mechanism to cope with the atomic execution problem (as explained in \ref{newhash}). 
 A Kernel image has been compiled with the following built-it modules (other dependent Crypto modules are active but not shown in the list):
 \begin{itemize}
   \item CONFIG\_CRYPTO=y
@@ -619,8 +619,6 @@ The IPv4 testing involved two main configurations:
 \label{fig:network2}
 \end{figure} 
 
-It is important to note that in the first case, where the client has two interfaces, not only it advertises the second one using ADD\_ADDR(2), but it also soon after instantiate the new subflow with the server independently from the server's reaction to the received ADD\_ADDR(2) option: in the Linux Kernel implementation, the server would not start the creation of the subflow anyway since only the client does so. By providing the server with two interfaces instead, it is possible to actually trigger subflow establishment at the client exclusively thanks to the received ADD\_ADDR(2) from the server. 
-
 In setting the second configuration, not only the taps attached to the virtual machines have to be rearranged, but also the interface configuration within the virtual machines has to be modified to set the proper IP addresses and routing tables. The Ubuntu network configuration file in \textit{/etc/network/interfaces} for the server in this new scenario is reported:
 
 \begin{verbatim}
@@ -647,9 +645,12 @@ Moreover, proper ip routing configurations have been set to direct the packet fl
 10.2.2.0/24 dev eth1  proto kernel  scope link  src 10.2.2.2 
 \end{verbatim}
  
+It is important to note that in the first case where the client has two interfaces, not only it advertises the second one using ADD\_ADDR(2), but it also soon after instantiate the new subflow with the server independently from the server's reaction to the received ADD\_ADDR(2) option: in the Linux Kernel implementation, the server would not start the creation of the subflow anyway since only the client does so. By providing the server with two interfaces instead, as it is the case with the second configuration, it is possible to actually trigger subflow establishment at the client exclusively thanks to the received ADD\_ADDR(2) from the server. 
+
+The ADD\_ADDR2 has been tested in these two IPv4 configurations and subflow establishment works properly when the HMAC field in the new option is verified.
 The two configurations reported so far were replicated for the IPv6 tests. In this case, slightly different changes were applied to the configuration files and scripts, but the final scenarios are similar to the ones for IPv4, just with the updated IP addresses. The new \textit{client.sh} for the IPv6 scenario in which the client has two interfaces is reported in listing \ref{clientsh6}.
 
-\begin{lstlisting}[language=bash, caption=\textit{client.sh for IPv6 setup}, label=clientsh6]
+\begin{lstlisting}[language=bash, caption=\textit{client.sh} for IPv6 setup, label=clientsh6]
 #!/bin/bash
 
 USER=`whoami`
@@ -673,26 +674,26 @@ sudo tunctl -d tap1
 sudo ip6tables -t nat -D POSTROUTING -s 1000::0/8 ! -d 1000::0/8 -j MASQUERADE
 \end{lstlisting}
 
-The previous script is associated with the following network configuration inside the client UML machine:
+%The previous script is associated with the following network configuration inside the client UML machine:
 
-\begin{verbatim}
-auto lo
-iface lo inet loopback
+%\begin{verbatim}
+%auto lo
+%iface lo inet loopback
 
-auto eth0
-iface eth0 inet6 static
-	address 1000:1:1::2
-	netmask 64
-	gateway 1000:1:1::1
+%auto eth0
+%iface eth0 inet6 static
+%	address 1000:1:1::2
+%	netmask 64
+%	gateway 1000:1:1::1
+%
+%auto eth1
+%iface eth1 inet6 static
+%	address 1000:1:2::2
+%	netmask 64
+%	gateway 1000:1:2::1
+%\end{verbatim}
 
-auto eth1
-iface eth1 inet6 static
-	address 1000:1:2::2
-	netmask 64
-	gateway 1000:1:2::1
-\end{verbatim}
-
-Appropriate route rules have been also set to achieve the desired flow redirection through the appropriate tap interfaces. Eventually, the IPv6 scenario involving a client with two interfaces and a server with a single interface, with the IPv6 addresses in use, is represented in figure \ref{fig:netip6_1}:
+Appropriate network interface configurations and route rules have been also set to achieve the desired flow redirection through the appropriate taps. Eventually, the IPv6 scenario involving a client with two interfaces and a server with a single interface, with the IPv6 addresses in use, is represented in figure \ref{fig:netip6_1}:
 
 \begin{figure}[!htb]
 \centering
@@ -710,17 +711,17 @@ Finally, a second setup for IPv6 have been set, involving a client with a single
 \label{fig:netip6_2}
 \end{figure} 
 
-All the scenarios, two involving IPv4 and two involving IPv6, were tested to ensure that the new ADD\_ADDR2 format works properly. For each and every scenario, port advertisement has been also tested. All the results were positive, but only the outcome of a single scenario is reported in this paper, in appendix \ref{app:b}. Such appendix shows the capture file of an MPTCP connection involving the new ADD\_ADDR2 option sent from a server with two IPv6 interfaces to a client with a single IPv6 interface, without port advertisement enabled: it is possible to verify that the new subflow is started with MP\_JOIN from the client after receiving the ADD\_ADDR2 message, and the advertised IP address is correctly used.
+All the scenarios, two involving IPv4 and two involving IPv6, were tested to ensure that the new ADD\_ADDR2 format works properly. For each and every scenario, port advertisement has been also tested. All the results were positive, but only the outcome of a single scenario is reported in this paper, in appendix \ref{app:b}. Such appendix shows the capture file of an MPTCP version 1 connection involving the new ADD\_ADDR2 option sent from a server with two IPv6 interfaces to a client with a single IPv6 interface, without port advertisement enabled: it is possible to verify that the new subflow is started with MP\_JOIN from the client after receiving the ADD\_ADDR2 message, and the advertised IP address is correctly used.
 
 \subsubsection{ADD\_ADDR2 and keys' eavesdrop}
 After having tested the proper functioning of the new MPTCP implementation, this has been exposed to the very same attacking tool used to exploit the old ADD\_ADDR vulnerability. As expected, when the host using MPTCP version 1 receives the ADD\_ADDR message without the truncated HMAC field, it simply discards such packet and no subflow is originated, thus making the connection hijack impossible.
 
-The same result is achieved by sending an ADD\_ADDR2 packet with random truncated HMAC, thus proving the HMAC verification process works as expected.
+The same result is achieved by sending an ADD\_ADDR2 packet with random truncated HMAC, thus proving the HMAC verification process works as expected in MPTCP version 1.
 
 As a further evaluation of the new format, a modified version of the attacking script has been developed to eavesdrop the initial MPTCP keys exchanged in the MP\_CAPABLE options, thus being able to calculate the correct HMAC for ADD\_ADDR2 and carrying out the connection's hijack towards the updated MPTCP implementation \cite{add-addr2-eav}. This attack is indeed the combination of ADD\_ADDR attack and keys' eavesdrop attack, both explained in the section about MPTCP security.
-It is important to remind that such attack requires the attacker to be a partially on-path eavesdropper to retrieve the above-mentioned keys, which constitutes an important limitation for the attack, that is currently considered acceptable (see section \ref{keyseav}). Nevertheless, it is interesting to show the feasibility of this new kind of attack towards ADD\_ADDR2. The new Scapy attack script, acting in the same network configuration of section \ref{envsetup}, is very similar to the one used for exploiting the old ADD\_ADDR vulnerability with the only additional component capable of sniffing the keys in the SYN/ACK+MP\_CAPABLE option sent by the server to the client and using such keys to compute a valid HMAC field for the forged ADD\_ADDR2 message. The cryptographic function in the Scapy script is shown in listing \ref{pycrypto}, while the additional truncated HMAC value is added to the outgoing packet by using the modified Scapy class for ADD\_ADDR2 shown in listing \ref{scapy2}. In this case, as expected, the hijacking attack is proved to be still possible.
+It is important to remind that such attack requires the attacker to be a partially on-path eavesdropper to retrieve the above-mentioned keys, which constitutes an important limitation for the vulnerability, that is currently considered acceptable (see section \ref{keyseav}). Nevertheless, it is interesting to show the feasibility of this new kind of attack towards ADD\_ADDR2. The new Scapy attack script, acting in the same network configuration of section \ref{envsetup}, is very similar to the one used for exploiting the old ADD\_ADDR vulnerability with the only additional component capable of sniffing the keys in the SYN/ACK+MP\_CAPABLE option sent by the server to the client and using such keys to compute a valid HMAC field for the forged ADD\_ADDR2 message. The cryptographic function in the Scapy script is shown in listing \ref{pycrypto} and it works for the IPv4 advertisement without the port value: the argument \textit{r1} is the address ID value and the argument \textit{r2} is the IPv4 address, while \textit{k1} and \textit{k2} are the two keys for the MPTCP session eavesdropped from the MP\_CAPABLE messages. The additional truncated HMAC value is added to the forged packet by using the modified Scapy class for ADD\_ADDR2 shown in listing \ref{scapy2}. In this case, as expected, the hijacking attack is proved to be still possible.
 
-\begin{lstlisting}[language=Python, caption=\textit{HMAC calculation in Python}, label=pycrypto]
+\begin{lstlisting}[language=Python, caption=HMAC-SHA1 calculation in Python, label=pycrypto]
 ...
 def genhmac_addaddr2(k1, k2, r1, r2):
     """Returns a HMAC-SHA1 with the concatenation of k1 and k2
@@ -741,12 +742,11 @@ def genhmac_addaddr2(k1, k2, r1, r2):
 \end{lstlisting}
 
 \subsubsection{ADD\_ADDR(2) flooding}
-A final performance evaluation has been executed on the new ADD\_ADDR2 format. The newly introduced HMAC value in the ADD\_ADDR2 packet would trigger cryptographic computations at the receiver. Such computations are highly optimized for fast execution and reduced CPU utilization, but they might represent a problem if triggered at a high rate. 
-By studying the impact of the HMAC calculation for the MPTCP operations, it has been found that this accounts for the 25\% of the overall CPU time spent in generating the SYN/ACK+MP\_JOIN packet \cite{P14}.
+A final performance evaluation has been executed on the new ADD\_ADDR2 format. The newly introduced HMAC value in the ADD\_ADDR2 packet would trigger cryptographic computations at the receiver. Such computations are highly optimized for fast execution and reduced CPU utilization, but they might represent a problem if triggered at a high rate. For example, by studying the impact of the HMAC calculation for the MPTCP operations, it has been found that this accounts for the 25\% of the overall CPU time spent in generating the SYN/ACK+MP\_JOIN packet \cite{P14}.
 
-The possibility to overload a host's CPU is now enabled with ADD\_ADDR2, where an attacker can forge ADD\_ADDR2 messages with random HMAC and flood the target, so that the latter has to call the \textit{mptcp\_hmac\_sha1()} function repeatedly. Two new Scapy scripts have been developed to perform such flooding with both ADD\_ADDR \cite{add-addr-flood} and ADD\_ADDR2 \cite{add-addr-2-flood} so that it is possible to compare the difference in CPU load when the HMAC calculation is added to the flooding procedure at the client. The \textit{main()} function of the script for the ADD\_ADDR2 flooding is reported in listing \ref{flood2}.
+The possibility to overload a host's CPU is now enabled with ADD\_ADDR2, where an attacker can forge ADD\_ADDR2 messages with random HMAC and flood the target, so that the latter has to call the \textit{mptcp\_hmac\_sha1()} function repeatedly. Two new Scapy scripts have been developed to perform such flooding with both ADD\_ADDR \cite{add-addr-flood} and ADD\_ADDR2 \cite{add-addr-2-flood} so that it is possible to compare the difference in CPU load when the HMAC calculation is added to the flooding procedure towards the client. The \textit{main()} function of the script for the flooding is reported in listing \ref{flood2}.
 
-\begin{lstlisting}[language=Python, caption=\textit{Scapy flooding tool}, label=flood2]
+\begin{lstlisting}[language=Python, caption=Scapy flooding tool (\textit{main()} function), label=flood2]
 def main():
     args = parse_args()
 
@@ -782,21 +782,19 @@ The test involved a \textit{netcat} communication between the client and the ser
 \begin{figure}[!htb]
 \centering
 \includegraphics[width=\textwidth]{images/wirethrough}
-\caption{Flooding traffic with sending rate set to 100000 packets/sec (ADD\_ADDR)}
+\caption{Flooding traffic with sending rate set to 100000 packets/sec}
 \label{fig:sendgraph}
 \end{figure} 
 
 In defining the sending rates to be used, it was verified that no packets were dropped by the receiving kernel and that the actual throughput of the flooding tool resembles the value passed as parameter to \textit{tcpreplay}. For these purposes, Wireshark has been used to inspect the actual traffic, and it was possible to verify that Scapy was able to maintain the required sending rate with a good approximation: the results for the most CPU-intensive case, involving 100000 packets per second, show that the actual throughput average is lower than the expected value but always higher than 99000 packets per second (less than 1\% difference). More importantly, the same difference is observed for both ADD\_ADDR and ADD\_ADDR2 packets, meaning that its influence on the comparison between the two formats can be considered very limited. A typical flooding traffic for the simulation is reported in figure \ref{fig:sendgraph}, with a sending rate set to 100000 packets per second.
 
 Both ADD\_ADDR and ADD\_ADDR2 flooding have been executed, and each configuration has been run five times for better statistics. The targeted virtual machine (the client UML) was assigned to a single core of the eight Intel Core i7-4770S CPUs (3.10GHz) available in the physical machine. 256MB was the amount of assigned RAM. The results of such experiment are shown in graph of figure \ref{fig:floodgraph}.
-
 \begin{figure}[!htb]
 \centering
 \includegraphics[width=\textwidth]{images/flood}
-\caption{Flooding attack for ADD\_ADDR and ADD\_ADDR2}
+\caption{Flooding attack for ADD\_ADDR and ADD\_ADDR2 and its impact on targeted host's CPU load}
 \label{fig:floodgraph}
 \end{figure} 
+The graph shows how the CPU usage increases almost linearly with respect to the number of received ADD\_ADDR(2) per second. However, for the ADD\_ADDR2 case the CPU usage sightly increases with the respect to the ADD\_ADDR case, as expected because of the additional HMAC calculation performed for each incoming message. For each tested sending rate, the average CPU usage increases of around 13\% (plus or minus 0,5\%) in case of ADD\_ADDR2 packets: for example, the CPU load for the most CPU-intensive tested scenario, involving 100000 packets per seconds, passes from 55,9\% to 63,4\%, in average.
 
-The graph shows how the CPU usage increases almost linearly with respect to the number of received ADD\_ADDR(2) per second. However, for the ADD\_ADDR2 case the CPU usage sightly increases with the respect to the ADD\_ADDR case, as expected because of the additional HMAC calculation performed for each incoming message. For each tested sending rate, the average CPU usage increases of around 13\% (plus or minus 0,5\%) in case of ADD\_ADDR2 packets.
-
-Even if this experiment gives only a rough estimation of the impact brought by the HMAC field in case of flooding attacks, the final data shows a limited increase in CPU usage, not pronounced enough to claim that ADD\_ADDR2 introduces any new attacking vector. Nevertheless, further tests with different operational environment are advised to further investigate the new format's implementation.
+Even if this experiment gives only a rough estimation of the impact brought by the HMAC field in case of flooding attacks, the final data shows a limited increase in CPU usage, not pronounced enough to claim that ADD\_ADDR2 introduces any new attacking vector. Nevertheless, further tests with different operational environments are advised to further investigate the new format's implementation.

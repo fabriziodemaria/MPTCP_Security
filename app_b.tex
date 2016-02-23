@@ -3,7 +3,7 @@
 
 This appendix contains the first 10 packets of a MPTCP connection between two UML virtual machines using the IPv6 network scenario shown in figure \ref{fig:netip6_2}. The MPTCP version in use includes the set of patches developed during the thesis work (compliant with \rfc{6824bis-04}), such as version control (set to 1, as shown in the first three frames related to the MP\_CAPABLE handshake) and ADD\_ADDR2 (the truncated HMAC value is present in frame 4). The main purpose of this capture file is to show the proper functioning of the patches introduced during the thesis work.
 
-The capture file is generated with the Wireshark tool made compatible with ADD\_ADDR2, and the displayed content is trimmed to just show the TCP flags and the MPTCP options exchanged in signaling packets. Note that this capture is obtained by monitoring \textit{tap0}.
+The capture file is generated with the Wireshark tool made compatible with ADD\_ADDR2, and the displayed content is trimmed to just show the TCP flags and the MPTCP options exchanged in signaling packets. This capture is obtained by monitoring \textit{tap0}.
 
 \begingroup
     \fontsize{8pt}{9pt}\selectfont
