@@ -781,20 +781,38 @@ The test involved a \textit{netcat} communication between the client and the ser
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=\textwidth]{images/wirethrough}
+\includegraphics[width=0.9\textwidth]{images/wirethrough}
 \caption{Flooding traffic with sending rate set to 100000 packets/sec}
 \label{fig:sendgraph}
 \end{figure} 
 
 In defining the sending rates to be used, it was verified that no packets were dropped by the receiving kernel and that the actual throughput of the flooding tool resembles the value passed as parameter to \textit{tcpreplay}. For these purposes, Wireshark has been used to inspect the actual traffic, and it was possible to verify that Scapy was able to maintain the required sending rate with a good approximation: the results for the most CPU-intensive case, involving 100000 packets per second, show that the actual throughput average is lower than the expected value but always higher than 99000 packets per second (less than 1\% difference). More importantly, the same difference is observed for both ADD\_ADDR and ADD\_ADDR2 packets, meaning that its influence on the comparison between the two formats can be considered very limited. A typical flooding traffic for the simulation is reported in figure \ref{fig:sendgraph}, with a sending rate set to 100000 packets per second.
 
-Both ADD\_ADDR and ADD\_ADDR2 flooding have been executed, and each configuration has been run five times for better statistics. The targeted virtual machine (the client UML) was assigned to a single core of the eight Intel Core i7-4770S CPUs (3.10GHz) available in the physical machine. 256MB was the amount of assigned RAM. The results of such experiment are shown in graph of figure \ref{fig:floodgraph}.
+\begin{table}[h!]
+\centering
+\begin{tabular}{ |p{4.8cm}|p{1.2cm}|p{1.2cm}|p{1.2cm}|p{1.2cm}|p{1.2cm}|   }
+\hline
+Flooding rate (pkt/sec) &20k&40k&60k&80k&100k \\
+\hline
+CPU usage (ADD\_ADDR) & 11,22\% & 22,18\% & 33,00\% & 46,43\% & 55,88\% \\
+CPU usage (ADD\_ADDR2) & 12,66\% & 25,03\% & 37,47\% & 52,09\% & 63,38\% \\
+Relative increase & 13,41\% & 12,19\% & 13,55\% & 12,86\% & 12,78\% \\
+Absolute increase & 1,43\% & 2,85\% & 4,47\% & 5,66\% & 7,49\% \\
+\hline
+\end{tabular}
+\caption{Flooding results}
+\label{table:floodtable}
+\end{table}
+
+Both ADD\_ADDR and ADD\_ADDR2 flooding have been executed, and each configuration has been run five times for better statistics. The targeted virtual machine (the client UML) was assigned to a single core of the eight Intel Core i7-4770S CPUs (3.10GHz) available in the physical machine. 256MB was the amount of assigned RAM. The results of such experiment are shown in graph of figure \ref{fig:floodgraph} and in the table \ref{table:floodtable}.
+
+The graph shows how the CPU usage increases almost linearly with respect to the number of received ADD\_ADDR(2) per second. However, for the ADD\_ADDR2 case the CPU usage sightly increases with the respect to the ADD\_ADDR case, as expected because of the additional HMAC calculation performed for each incoming message. For each tested sending rate, the average CPU usage increases of around 13\% (plus or minus 0,5\%) in case of ADD\_ADDR2 packets: for example, the CPU load for the most CPU-intensive tested scenario, involving 100000 packets per seconds, passes from 55,9\% to 63,4\%, in average.
+
 \begin{figure}[!htb]
 \centering
 \includegraphics[width=\textwidth]{images/flood}
 \caption{Flooding attack for ADD\_ADDR and ADD\_ADDR2 and its impact on targeted host's CPU load}
 \label{fig:floodgraph}
 \end{figure} 
-The graph shows how the CPU usage increases almost linearly with respect to the number of received ADD\_ADDR(2) per second. However, for the ADD\_ADDR2 case the CPU usage sightly increases with the respect to the ADD\_ADDR case, as expected because of the additional HMAC calculation performed for each incoming message. For each tested sending rate, the average CPU usage increases of around 13\% (plus or minus 0,5\%) in case of ADD\_ADDR2 packets: for example, the CPU load for the most CPU-intensive tested scenario, involving 100000 packets per seconds, passes from 55,9\% to 63,4\%, in average.
 
 Even if this experiment gives only a rough estimation of the impact brought by the HMAC field in case of flooding attacks, the final data shows a limited increase in CPU usage, not pronounced enough to claim that ADD\_ADDR2 introduces any new attacking vector. Nevertheless, further tests with different operational environments are advised to further investigate the new format's implementation.
