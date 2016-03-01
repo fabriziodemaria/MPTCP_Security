@@ -84,7 +84,7 @@ The final goal of MPTCP is to replace the majority of the current TCP implementa
 \section{Problem statement}
 MPTCP is a big effort from the IETF to unlock multipath networking capabilities worldwide, with many subtle implications for current infrastructures. Hence the importance of evaluating the current security status of MPTCP, by inspecting its implications on external middleboxes and security equipment and also by analyzing internal design flaws that might allow attacks to the MPTCP sessions.
 The reference implementation for the new protocol is available for the Linux Kernel and currently maintained in an off-tree open-source repository.
-The main focus of this paper is related to the main vulnerability currently known for the protocol, concerning the ADD\_ADDR component: during the thesis work such vulnerability is studied and the solution for it is implemented and evaluated. In the process, patches for the Linux Kernel implementation of the protocol have been developed to fix the vulnerability and mark the first step towards the Linux implementation of the new version of MPTCP.
+The main focus of this paper is related to the main vulnerability currently known for the protocol, concerning the ADD\_ADDR component: during the thesis work such vulnerability is studied and the solution for it is implemented and evaluated. In the process, patches for the Linux Kernel implementation of the protocol have been developed to fix the vulnerability and mark the first step towards the Linux implementation of the new version of MPTCP. The afore-mentioned vulnerability, present in the version 0 of MPTCP, can potentially allow an attacker to perform an off-path hijacking of the connection by exploiting the ADD\_ADDR functionality of advertising the creation of a new subflow: in very simplified terms, the attacker would be able to advertise its own IP address to execute the hijacking.
 
 A comprehensive list of all the objectives for the thesis work is the following:
 \begin{itemize}
@@ -100,6 +100,39 @@ A comprehensive list of all the objectives for the thesis work is the following:
 \section{Methodology}
 The thesis work has been carried out at the Intel Corporation offices in Lund (Sweden). The process took six months in total, with a main focus on testing and developing. The entire work has been closely followed by major stakeholders in the MPTCP community, located in Sweden, Romania and the United States. Such cooperation involved patch reviewing and weekly meetings.
 
+The engineering approach adopted for the thesis work involved a first major step regarding observations on the protocol's behaviour when subjected to external custom-made input. This step can be considered per se a smaller and modular sub-project, in which it is possible to define yet other sub-steps:
+
+\begin{itemize}
+    \item Setting up and running standard MPTCP connections on a portable virtual environment that is fast to manipulate and that provides all the means for proper monitoring and testing of the connections. Such environment had to provide tracing and debugging capabilities for the running Kernel images as well;
+    \item Evaluating the best external tools to monitor and observe and capture all the low-level details of the packets exchanged during the MPTCP sessions;
+    \item Evaluating the best external tools to easily operate on the ongoing MPTCP sessions, by manipulating and injecting forged packets. Other ways to operate over the connections have been taken into consideration as well, like the firewall setup necessary to block specific kind of packets.
+\end{itemize}
+
+These preliminary steps allowed to obtain a fundamental test-bed configuration later adopted extensively during the whole development phase. 
+The development phase consisted on a different methodology approach involving multiple iterations. Each iteration consisted on:
+
+\begin{itemize}
+    \item Examine the specifications for the required features under development; if present, closely investigate the review and feedbacks from external sources on the ongoing iteration as well;
+    \item Apply a relatively small amount of changes to the current implementation according to the previous step;
+    \item Extensively testing all the regular and edge cases potentially affected by the modifications elaborated in the previous step (by using the tools from the previously described preliminary steps);
+    \item Restart the loop from the first step in case of malfunctioning due to bug in the code; otherwise, changes were pushed into experimental repository for external evaluations, reviews and feedbacks.
+\end{itemize}
+
+Despite the iterative approach, the development phase have been arranged to keep good levels of modularity in the produced code, so that each elaborated feature required a certain number of iterations to be completed but the final result could be considered self-contained and valid for all the subsequent features built on top of it. 
+Such modularity translated in practice in different patches for the Linux Kernel implementation of MPTCP and allowed for easy selection of the components valuable for the official implementation, while others were saved in experimental branches for future reference.
+Each one of the features have been developed starting from the specifications and comments from external sources, and the collaborative environment allowed to reverse the operational flow and occasionally advance proposals more or less formal on modifications regarding the protocol's functioning.
+The entire set of iterations and the final patches' submission were followed by a higher-level evaluation of the entire work, that brought up minor issues on the whole project and subsequent faster fixes until the final product was deployed, i.e. all the patches (merged and experimental) were finalized. 
+
+A last major step in the methodology for the work consisted in writing the final report. During such last step, an experimental evaluation on the overall product has been developed to provide additional insights on the performance and functioning changes introduced with the new patches. It is important to mention that no modifications have been applied to the final patches at this stage, since the correct functioning has been positively certified at the end of the development phase, but the additional tests were developed to gather additional data mainly on performance impact.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=\textwidth]{images/methodology}
+\caption{The adopted engineering methodology}
+\label{fig:methodology}
+\end{figure}
+
+\subsection{Daily workflow}
 The workflow started with an overall study of MPTCP and how it interacts with the most common middleboxes. The next step was a more focused evaluation of the current threats for the protocol, mainly referencing to the RFC document regarding such topic \cite{rfc7430}. Within the document, only one vulnerability is considered a blocking issue in the advancement of MPTCP standardization, known as the ADD\_ADDR vulnerability. The document also proposes a change in the protocol design that fixes the problem. With such background, the actual development stage of the work started. At first, it was necessary to sync with the development status by interacting with the official MPTCP mailing list for developers, at \url{https://listes-2.sipr.ucl.ac.be/sympa}. This allowed to make sure that the ADD\_ADDR solution proposed in official documentation \cite{rfc7430} was indeed the preferred one and that nobody started developing a patch for it already.
 Before starting to work on the fix, a first stage of the work involved a deeper analysis of the ADD\_ADDR vulnerability: a connection hijacking has been executed by exploiting such vulnerability in a testing environment. This allowed to better validate the criticality of the problem and it was a useful experiment to get acquainted with MPTCP. Moreover, it was a good way to setup a proper testing environment that was then used during the whole patch-development process that followed.
 
